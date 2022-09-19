@@ -2,9 +2,8 @@
 
 namespace wcf\data\minecraft;
 
+use DateTime;
 use wcf\data\DatabaseObject;
-use wcf\system\minecraft\IMinecraftHandler;
-use wcf\system\minecraft\MinecraftHandler;
 
 /**
  * Minecraft Data class
@@ -25,35 +24,66 @@ class Minecraft extends DatabaseObject
      */
     protected static $databaseTableIndexName = 'minecraftID';
 
-    /*
-     * ObjectIdDatabaseTableColumn $minecraftID
-     * VarcharDatabaseTableColumn $name length = 20
-     *
-     * NotNullVarchar255DatabaseTableColumn $url length = 255
-     *
-     * VarcharDatabaseTableColumn $user length = 255
-     * VarcharDatabaseTableColumn $password length = 255
-
-     * NotNullInt10DatabaseTableColumn $creationDate
-     */
-
     /**
-     * minecrraft connection
-     *
-     * @var IMinecraftHandler
+     * Returns title
+     * @return ?string
      */
-    protected $connection;
-
-    /**
-     * getConnection
-     *
-     * @return IMinecraftHandler
-     */
-    public function getConnection(): IMinecraftHandler
+    public function getTitle()
     {
-        if ($this->connection === null) {
-            $this->connection = new MinecraftHandler($this->url, $this->user, $this->password);
-        }
-        return $this->connection;
+        return $this->title;
+    }
+
+    /**
+     * Check user an password
+     * @return bool
+     */
+    public function check(string $auth)
+    {
+        return \hash_equals($this->getAuth(), $auth);
+    }
+
+    /**
+     * Returns auth data
+     * @return ?string
+     */
+    public function getAuth()
+    {
+        return $this->auth;
+    }
+
+    /**
+     * Returns user
+     * @return ?string
+     */
+    public function getUser()
+    {
+        return explode(':', \base64_decode($this->getAuth()))[0];
+    }
+
+    /**
+     * Returns password
+     * @return ?string
+     */
+    public function getPassword()
+    {
+        return explode(':', \base64_decode($this->getAuth()))[1];
+    }
+
+    /**
+     * Returns createdTimestamp
+     * @return ?int
+     */
+    public function getCreatedTimestamp()
+    {
+        return $this->creationDate;
+    }
+
+    /**
+     * Returns date
+     * @return ?DateTime
+     */
+    public function getCreatdDate()
+    {
+        return new DateTime($this->getCreatedTimestamp());
     }
 }

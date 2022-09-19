@@ -2,8 +2,8 @@
     <select id="{$option->optionName}" name="values[{$option->optionName}]">
         <option></option>
         {foreach from=$minecraftList item=minecraft}
-            <option value="{@$minecraft->minecraftID}" {if $minecraft->minecraftID == $value} selected{/if}>
-                {$minecraft->name}</option>
+            <option value="{@$minecraft->getObjectID()}" {if $minecraft->getObjectID() == $value} selected{/if}>
+                {$minecraft->getTitle()}</option>
         {/foreach}
     </select>
 {else}

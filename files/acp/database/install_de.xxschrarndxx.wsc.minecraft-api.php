@@ -8,14 +8,12 @@ use wcf\system\database\table\index\DatabaseTablePrimaryIndex;
 use wcf\system\database\table\DatabaseTable;
 
 return [
-    DatabaseTable::create('wcf' . WCF_N . '_minecraft')
+    DatabaseTable::create('wcf1_minecraft')
         ->columns([
             ObjectIdDatabaseTableColumn::create('minecraftID'),
-            VarcharDatabaseTableColumn::create('name')
+            VarcharDatabaseTableColumn::create('title')
                 ->length(20),
-            NotNullVarchar255DatabaseTableColumn::create('url'),
-            NotNullVarchar255DatabaseTableColumn::create('user'),
-            NotNullVarchar255DatabaseTableColumn::create('password'),
+            NotNullVarchar255DatabaseTableColumn::create('auth'),
             NotNullInt10DatabaseTableColumn::create('creationDate')
         ])
         ->indices([

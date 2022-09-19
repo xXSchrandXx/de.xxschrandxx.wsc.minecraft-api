@@ -2,20 +2,13 @@
 
 namespace wcf\acp\form;
 
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\GuzzleException;
 use wcf\data\minecraft\MinecraftAction;
 use wcf\form\AbstractFormBuilderForm;
-use wcf\system\exception\SystemException;
 use wcf\system\form\builder\container\FormContainer;
+use wcf\system\form\builder\data\processor\VoidFormDataProcessor;
 use wcf\system\form\builder\field\PasswordFormField;
 use wcf\system\form\builder\field\TextFormField;
-use wcf\system\form\builder\field\UrlFormField;
-use wcf\system\form\builder\field\validation\FormFieldValidationError;
-use wcf\system\form\builder\field\validation\FormFieldValidator;
-use wcf\system\minecraft\MinecraftHandler;
-use wcf\util\DateUtil;
-use wcf\util\JSON;
+use wcf\system\form\builder\field\TitleFormField;
 
 /**
  * MinecraftAdd Form class
@@ -42,6 +35,11 @@ class MinecraftAddForm extends AbstractFormBuilderForm
     public $objectActionClass = MinecraftAction::class;
 
     /**
+     * @var \wcf\data\minecraft\Minecraft
+     */
+    public $formObject;
+
+    /**
      * @inheritDoc
      */
     protected function createForm()
@@ -51,83 +49,16 @@ class MinecraftAddForm extends AbstractFormBuilderForm
         $this->form->appendChild(
             FormContainer::create('data')
                 ->appendChildren([
-                    TextFormField::create('name')
-                        ->label('wcf.page.minecraftAdd.name')
-                        ->description('wcf.page.minecraftAdd.name.description')
+                    TitleFormField::create()
                         ->value('Default')
                         ->maximumLength(20)
                         ->required(),
-                    UrlFormField::create('url')
-                        ->label('wcf.page.minecraftAdd.url')
-                        ->description('wcf.page.minecraftAdd.url.description')
-                        ->required()
-                        ->addValidator(new FormFieldValidator('connectionCheck', function (UrlFormField $field) {
-                            /** @var TextFormField $userField */
-                            $userField = $field->getDocument()->getNodeById('user');
-                            $user = $userField->getSaveValue();
-                            /** @var PasswordFormField $passwordField */
-                            $passwordField = $field->getDocument()->getNodeById('password');
-                            if (empty($passwordField->getSaveValue())) {
-                                $password = $this->formObject->password;
-                            } else {
-                                $password = $passwordField->getSaveValue();
-                            }
-
-                            /** @var MinecraftHandler */
-                            $handler = new MinecraftHandler($field->getSaveValue(), $user, $password);
-                            try {
-                                $response = $handler->call('GET');
-                                $responseBody = JSON::decode($response->getBody());
-                                if (!array_key_exists('applicationDescription', $responseBody)) {
-                                    $field->addValidationError(
-                                        new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => "Response not WSC-Minecraft-Bridge."])
-                                    );
-                                }
-                                if ($responseBody['applicationDescription'] != "WSC-Minecraft-Bridge") {
-                                    $field->addValidationError(
-                                        new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => "'applicationDescription' not 'WSC-Minecraft-Bridge'"])
-                                    );
-                                }
-                            } catch (SystemException $e) {
-                                $field->addValidationError(
-                                    new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => "Could not decode JSON"])
-                                );
-                            } catch (ClientException $e) {
-                                switch ($e->getCode()) {
-                                    case 401:
-                                        $field->addValidationError(
-                                            new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.wrongPassword')
-                                        );
-                                        break;
-                                    case 429:
-                                        if ($e->hasResponse()) {
-                                            $time = DateUtil::getDateTimeByTimestamp(TIME_NOW + (int) $e->getResponse()->getHeaderLine('Retry-After'));
-                                            $field->addValidationError(
-                                                new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.tooManyConnectionsDynamic', ['time' => $time])
-                                            );
-                                        } else {
-                                            $field->addValidationError(
-                                                new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => $e->getMessage()])
-                                            );
-                                        }
-                                        break;
-                                    default:
-                                        $field->addValidationError(
-                                            new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => $e->getMessage()])
-                                        );
-                                        break;
-                                }
-                            } catch (GuzzleException $e) {
-                                $field->addValidationError(
-                                    new FormFieldValidationError('cantConnect', 'wcf.page.minecraftAdd.cantConnectDynamic', ['msg' => $e->getMessage()])
-                                );
-                            }
-                        })),
                     TextFormField::create('user')
-                        ->label('wcf.page.minecraftAdd.user')
+                        ->label('wcf.acp.form.minecraftAdd.user')
+                        ->placeholder()
                         ->required(),
                     PasswordFormField::create('password')
-                        ->label('wcf.page.minecraftAdd.password')
+                        ->label('wcf.acp.form.minecraftAdd.password')
                         ->placeholder(($this->formAction == 'edit') ? 'wcf.acp.updateServer.loginPassword.noChange' : '')
                         ->required($this->formAction !== 'edit')
                 ])
@@ -142,6 +73,28 @@ class MinecraftAddForm extends AbstractFormBuilderForm
         if ($this->formAction == 'create') {
             $this->additionalFields['creationDate'] = TIME_NOW;
         }
+
+        $user = $this->form->getData()['data']['user'];
+
+        $password = $this->form->getData()['data']['password'];
+        if ($this->formAction == 'edit' && empty($password)) {
+            $password = $this->formObject->getPassword();
+        }
+
+        $this->additionalFields['auth'] = \base64_encode($user . ':' . $password);
+
+        $this->form->getDataHandler()->addProcessor(
+            new VoidFormDataProcessor(
+                'user',
+                true
+            )
+        );
+        $this->form->getDataHandler()->addProcessor(
+            new VoidFormDataProcessor(
+                'password',
+                true
+            )
+        );
 
         parent::save();
     }

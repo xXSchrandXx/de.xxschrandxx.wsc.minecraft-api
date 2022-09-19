@@ -2,9 +2,12 @@
 
 namespace wcf\acp\form;
 
+use wcf\data\IStorableObject;
 use wcf\data\minecraft\Minecraft;
 use wcf\system\exception\IllegalLinkException;
+use wcf\system\form\builder\data\processor\CustomFormDataProcessor;
 use wcf\system\form\builder\field\PasswordFormField;
+use wcf\system\form\builder\IFormDocument;
 
 /**
  * MinecraftEdit Form class
@@ -15,7 +18,6 @@ use wcf\system\form\builder\field\PasswordFormField;
  */
 class MinecraftEditForm extends MinecraftAddForm
 {
-
     /**
      * @inheritDoc
      */
@@ -43,6 +45,19 @@ class MinecraftEditForm extends MinecraftAddForm
      */
     public function setFormObjectData()
     {
+
+        $this->form->getDataHandler()->addProcessor(
+            new CustomFormDataProcessor(
+                'addUser',
+                null,
+                function (IFormDocument $document, array $data, IStorableObject $object) {
+                    $user = explode(':', base64_decode($object->auth))[0];
+                    $data['user'] = $user;
+                    return $data;
+                }
+            )
+        );
+
         parent::setFormObjectData();
 
         /** @var PasswordFormField $passwordField */

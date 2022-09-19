@@ -26,7 +26,7 @@ class MinecraftConnectionMultiSelectOptionType extends AbstractOptionType
     public function getFormElement(Option $option, $value)
     {
         $minecraftList = new MinecraftList();
-        $minecraftList->sqlOrderBy = 'name ASC';
+        $minecraftList->sqlOrderBy = 'title ASC';
         $minecraftList->readObjects();
 
         WCF::getTPL()->assign([
@@ -52,7 +52,7 @@ class MinecraftConnectionMultiSelectOptionType extends AbstractOptionType
         $minecraftList->readObjectIDs();
 
         foreach ($newValue as $value) {
-            if (!\in_array($value, $minecraftList->objectIDs)) {
+            if (!\in_array($value, $minecraftList->getObjectIDs())) {
                 throw new UserInputException($option->optionName);
             }
         }

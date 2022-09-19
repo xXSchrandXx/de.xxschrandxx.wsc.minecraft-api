@@ -7,8 +7,8 @@
 		<packagename language="de"><![CDATA[Minecraft-API]]></packagename>
 		<packagedescription><![CDATA[API for Minecraft through WSC-Minecraft-Bridge.]]></packagedescription>
 		<packagedescription language="de"><![CDATA[API für Minecraft durch WSC-Minecraft-Bridge.]]></packagedescription>
-		<version>2.1.2 dev 1</version>
-		<date>2022-05-03</date>
+		<version>3.0.0</version>
+		<date>2022-09-15</date>
 	</packageinformation>
 
 	<authorinformation>
@@ -25,12 +25,6 @@
 		<excludedpackage version="*">de.atrox-dev.minecraft.server</excludedpackage>
 	</excludedpackages>
 
-	<instructions fromversion="2.1.0" type="update">
-		<instruction type="acpTemplate" />
-		<instruction type="file" />
-		<instruction type="language"/>
-	</instructions>
-
 	<instructions type="install">
 		<instruction type="acpTemplate" />
 		<instruction type="file" />
@@ -38,6 +32,7 @@
 		<instruction type="acpMenu" />
 		<instruction type="userGroupOption" />
 		<instruction type="option" />
+		<instruction type="objectType" />
 		<instruction type="database">acp/database/install_de.xxschrarndxx.wsc.minecraft-api.php</instruction>
 	</instructions>
 </package>
