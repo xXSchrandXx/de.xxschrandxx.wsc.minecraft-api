@@ -30,6 +30,11 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
     protected array $availableMinecraftIDs;
 
     /**
+     * Authentication Header String
+     */
+    protected $auth;
+
+    /**
      * Minecraft the request came from.
      * @var Minecraft
      */
@@ -78,19 +83,6 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             return $result;
         }
 
-        $minecraftList = new MinecraftList();
-        $minecraftList->getConditionBuilder()->add('auth = ?', [$this->headers['Authorization']]);
-        $minecraftList->readObjects();
-        try {
-            $this->minecraft = $minecraftList->getSingleObject();
-        } catch (BadMethodCallException $e) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-
         // check permissions
         try {
             $this->checkPermissions();
@@ -128,11 +120,27 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         // validate Authorization
         if (!array_key_exists('Authorization', $this->headers)) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Missing \'Authorization\' in headers.', 400);
+                return $this->send('Unauthorized. Missing \'Authorization\' in headers.', 401);
             } else {
-                return $this->send('Bad Request.', 400);
+                return $this->send('Unauthorized.', 401);
             }
         }
+        $this->auth = \explode(' ', $this->headers['Authorization'], 2);
+        if (count($this->auth) != 2) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Unauthorized. \'Authorization\' wrong formatted.', 401);
+            } else {
+                return $this->send('Unauthorized.', 401);
+            }
+        }
+        if ($this->auth[0] != 'Basic') {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Unauthorized. \'Authorization\' not supported.', 401);
+            } else {
+                return $this->send('Unauthorized.', 401);
+            }
+        }
+
         return null;
     }
 
@@ -141,6 +149,19 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      */
     public function checkPermissions()
     {
+        $minecraftList = new MinecraftList();
+        $minecraftList->getConditionBuilder()->add('auth = ?', [$this->auth[1]]);
+        $minecraftList->readObjects();
+        try {
+            $this->minecraft = $minecraftList->getSingleObject();
+        } catch (BadMethodCallException $e) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Unauthorized. Unknown user or password.', 401);
+            } else {
+                return $this->send('Unauthorized.', 401);
+            }
+        }
+
         // call checkPermissions event
         EventHandler::getInstance()->fireAction($this, 'checkPermissions');
     }
