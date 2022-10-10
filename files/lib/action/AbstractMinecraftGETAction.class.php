@@ -2,8 +2,11 @@
 
 namespace wcf\action;
 
+use BadMethodCallException;
 use Laminas\Diactoros\Response\JsonResponse;
 use wcf\data\minecraft\Minecraft;
+use wcf\data\minecraft\MinecraftList;
+use wcf\system\event\EventHandler;
 use wcf\system\exception\IllegalLinkException;
 use wcf\system\exception\PermissionDeniedException;
 use wcf\system\flood\FloodControl;
@@ -25,12 +28,6 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      * @var int[]
      */
     protected array $availableMinecraftIDs;
-
-    /**
-     * Minecraft ID
-     * @var int
-     */
-    protected int $minecraftID = 0;
 
     /**
      * Minecraft the request came from.
@@ -65,36 +62,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             }
         }
 
-        // validate minecraftID
-        if (!array_key_exists('id', $_REQUEST)) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Missing \'id\'.', 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-
-        $this->minecraftID = (int)$_REQUEST['id'];
-
-        if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($this->minecraftID, $this->availableMinecraftIDs)) {
-                if (ENABLE_DEBUG_MODE) {
-                    return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
-                } else {
-                    return $this->send('Bad Request.', 400);
-                }
-            }
-        }
-
-        $this->minecraft = new Minecraft($this->minecraftID);
-        if (!$this->minecraft->getObjectID()) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-
+        // Read header
         $this->headers = getallheaders();
 
         if (!is_array($this->headers) || empty($this->headers)) {
@@ -109,17 +77,42 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         if ($result !== null) {
             return $result;
         }
+
+        $minecraftList = new MinecraftList();
+        $minecraftList->getConditionBuilder()->add('auth = ?', [$this->headers['Authorization']]);
+        $minecraftList->readObjects();
+        try {
+            $this->minecraft = $minecraftList->getSingleObject();
+        } catch (BadMethodCallException $e) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+
+        // check permissions
+        try {
+            $this->checkPermissions();
+        } catch (PermissionDeniedException $e) {
+            return $this->send($e->getMessage(), 401);
+        }
+
+        if (isset($this->availableMinecraftIDs)) {
+            if (!in_array($this->minecraft->getObjectID(), $this->availableMinecraftIDs)) {
+                if (ENABLE_DEBUG_MODE) {
+                    return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
+                } else {
+                    return $this->send('Bad Request.', 400);
+                }
+            }
+        }
+
         $result = $this->readParameters();
         if ($result !== null) {
             return $result;
         }
-        try {
-            $result = $this->execute();
-        } catch (PermissionDeniedException $e) {
-            return $this->send($e->getMessage(), 401);
-        } catch (IllegalLinkException $e) {
-            return $this->send($e->getMessage(), 404);
-        }
+        $result = $this->execute();
         if ($result === null) {
             return $this->send('Internal Error.', 500);
         }
@@ -148,15 +141,8 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      */
     public function checkPermissions()
     {
-        parent::checkPermissions();
-
-        $auth = \explode(' ', $this->headers['Authorization'], 2);
-        if ($auth[0] !== 'Basic') {
-            throw new PermissionDeniedException();
-        }
-        if (!$this->minecraft->check($auth[1])) {
-            throw new PermissionDeniedException();
-        }
+        // call checkPermissions event
+        EventHandler::getInstance()->fireAction($this, 'checkPermissions');
     }
 
     /**
@@ -165,7 +151,15 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      */
     public function execute(): ?JsonResponse
     {
-        parent::execute();
+        // check modules
+        try {
+            $this->checkModules();
+        } catch (IllegalLinkException $e) {
+            return $this->send($e->getMessage(), 404);
+        }
+
+        // call execute event
+        EventHandler::getInstance()->fireAction($this, 'execute');
         return null;
     }
 
