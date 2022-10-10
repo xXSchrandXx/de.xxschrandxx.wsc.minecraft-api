@@ -150,11 +150,18 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
     public function checkPermissions()
     {
         $minecraftList = new MinecraftList();
-        $minecraftList->getConditionBuilder()->add('auth = ?', [$this->auth[1]]);
         $minecraftList->readObjects();
-        try {
-            $this->minecraft = $minecraftList->getSingleObject();
-        } catch (BadMethodCallException $e) {
+        /** @var \wcf\data\minecraft\Minecraft[] */
+        $minecrafts = $minecraftList->getObjects();
+
+        foreach ($minecrafts as $minecraft) {
+            if (hash_equals($minecraft->getAuth(), $this->auth[1])) {
+                $this->minecraft = $minecraft;
+                break;
+            }
+        }
+
+        if (isset($this->minecraft)) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Unauthorized. Unknown user or password.', 401);
             } else {
