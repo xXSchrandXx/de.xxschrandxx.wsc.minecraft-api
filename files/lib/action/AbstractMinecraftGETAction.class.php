@@ -4,6 +4,7 @@ namespace wcf\action;
 
 use BadMethodCallException;
 use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\ServerRequestFactory;
 use wcf\data\minecraft\Minecraft;
 use wcf\data\minecraft\MinecraftList;
 use wcf\system\event\EventHandler;
@@ -68,7 +69,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         }
 
         // Read header
-        $this->headers = getallheaders();
+        $this->headers = ServerRequestFactory::fromGlobals();
 
         if (!is_array($this->headers) || empty($this->headers)) {
             if (ENABLE_DEBUG_MODE) {
