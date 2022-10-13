@@ -2,8 +2,8 @@
 
 namespace wcf\action;
 
-use BadMethodCallException;
 use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\ServerRequestFactory;
 use wcf\data\minecraft\Minecraft;
 use wcf\data\minecraft\MinecraftList;
@@ -12,6 +12,7 @@ use wcf\system\exception\IllegalLinkException;
 use wcf\system\exception\PermissionDeniedException;
 use wcf\system\flood\FloodControl;
 use wcf\system\request\RouteHandler;
+use wcf\util\StringUtil;
 
 /**
  * Abstract Minecraft action class
@@ -26,14 +27,15 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
 
     /**
      * List of available minecraftIDs
-     * @var int[]
+     * @var string
      */
-    protected array $availableMinecraftIDs;
+    protected $availableMinecraftIDs;
 
     /**
-     * Authentication Header String
+     * Supported HTTP Method
+     * @var string
      */
-    protected $auth;
+    protected $supportetMethod = 'GET';
 
     /**
      * Minecraft the request came from.
@@ -43,9 +45,9 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
 
     /**
      * Request headers
-     * @var false|array
+     * @var ServerRequest
      */
-    protected $headers;
+    protected ServerRequest $request;
 
     /**
      * @inheritDoc
@@ -69,11 +71,19 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         }
 
         // Read header
-        $this->headers = ServerRequestFactory::fromGlobals();
+        $this->request = ServerRequestFactory::fromGlobals();
 
-        if (!is_array($this->headers) || empty($this->headers)) {
+        if ($this->supportetMethod !== $this->request->getMethod()) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Could not read headers.', 400);
+                return $this->send('Bad Request. Unsupported HTTP method.', 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+
+        if (!isset($this->request)) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. Could not read request.', 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
@@ -92,7 +102,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         }
 
         if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($this->minecraft->getObjectID(), $this->availableMinecraftIDs)) {
+            if (!in_array($this->minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
                 if (ENABLE_DEBUG_MODE) {
                     return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
                 } else {
@@ -118,15 +128,24 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      */
     public function readHeaders(): ?JsonResponse
     {
+        // validate header
+        if (empty($this->request->getHeaders())) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. Could not read headers.', 401);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+
         // validate Authorization
-        if (!array_key_exists('Authorization', $this->headers)) {
+        if (!array_key_exists('authorization', $this->request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Unauthorized. Missing \'Authorization\' in headers.', 401);
             } else {
                 return $this->send('Unauthorized.', 401);
             }
         }
-        $this->auth = \explode(' ', $this->headers['Authorization'], 2);
+        $this->auth = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
         if (count($this->auth) != 2) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Unauthorized. \'Authorization\' wrong formatted.', 401);

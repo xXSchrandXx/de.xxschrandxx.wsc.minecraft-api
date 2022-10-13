@@ -16,10 +16,9 @@ use wcf\util\JSON;
 abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
 {
     /**
-     * Request json data
-     * @var array
+     * @inheritDoc
      */
-    protected $json = [];
+    protected $supportetMethod = 'POST';
 
     /**
      * Returns decoded Request-JSON
@@ -48,14 +47,14 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
         $response = parent::readHeaders();
 
         // validate Content-Type
-        if (!array_key_exists('Content-Type', $this->headers)) {
+        if (!array_key_exists('content-type', $this->request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Bad Request. Missing \'Content-Type\' in headers.', 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
         }
-        if ($this->headers['Content-Type'] !== 'application/json') {
+        if ($this->request->getHeaderLine('content-type') !== 'application/json') {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Bad Request. Wrong \'Content-Type\'.', 400);
             } else {
@@ -75,7 +74,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
         $response = parent::readParameters();
 
         try {
-            $this->json = JSON::decode(file_get_contents('php://input'));
+            $this->json = JSON::decode($this->request->getBody()->getContents());
         } catch (SystemException $e) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send($e->getMessage(), 400);
