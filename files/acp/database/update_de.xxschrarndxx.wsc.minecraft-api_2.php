@@ -23,7 +23,7 @@ foreach ($minecrafts as $minecraft) {
     } catch (TypeError $e) {
         continue;
     }
-    $authArr = \explode($authEncoded, 2);
+    $authArr = \explode(':', $authEncoded, 2);
     if (!$authArr) {
         continue;
     }

@@ -3,12 +3,15 @@
 namespace wcf\acp\form;
 
 use wcf\data\minecraft\MinecraftAction;
+use wcf\data\minecraft\MinecraftList;
 use wcf\form\AbstractFormBuilderForm;
 use wcf\system\form\builder\container\FormContainer;
 use wcf\system\form\builder\data\processor\CustomFormDataProcessor;
 use wcf\system\form\builder\field\PasswordFormField;
 use wcf\system\form\builder\field\TextFormField;
 use wcf\system\form\builder\field\TitleFormField;
+use wcf\system\form\builder\field\validation\FormFieldValidationError;
+use wcf\system\form\builder\field\validation\FormFieldValidator;
 use wcf\system\form\builder\IFormDocument;
 use wcf\system\user\authentication\password\algorithm\Bcrypt;
 use wcf\system\user\authentication\password\IPasswordAlgorithm;
@@ -73,8 +76,21 @@ class MinecraftAddForm extends AbstractFormBuilderForm
                         ->required(),
                     TextFormField::create('user')
                         ->label('wcf.acp.form.minecraftAdd.user')
-                        ->placeholder()
-                        ->required(),
+                        ->required()
+                        ->addValidator(new FormFieldValidator('duplicate', function (TextFormField $field) {
+                            if ($field->getValue() === $field->getSaveValue()) {
+                                return;
+                            }
+                            $minecraftList = new MinecraftList();
+                            $minecraftList->getConditionBuilder()->add('user = ?', [$field->getValue()]);
+                            if ($minecraftList->countObjects() !== 0) {
+                                $field->addValidationError(
+                                    new FormFieldValidationError(
+                                        'duplicate'
+                                    )
+                                );
+                            }
+                        })),
                     PasswordFormField::create('password')
                         ->label('wcf.acp.form.minecraftAdd.password')
                         ->placeholder(($this->formAction == 'edit') ? 'wcf.acp.updateServer.loginPassword.noChange' : '')
