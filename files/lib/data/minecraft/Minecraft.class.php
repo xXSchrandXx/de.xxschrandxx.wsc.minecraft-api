@@ -4,6 +4,8 @@ namespace wcf\data\minecraft;
 
 use DateTime;
 use wcf\data\DatabaseObject;
+use wcf\system\user\authentication\password\algorithm\DoubleBcrypt;
+use wcf\system\user\authentication\password\PasswordAlgorithmManager;
 
 /**
  * Minecraft Data class
@@ -34,21 +36,44 @@ class Minecraft extends DatabaseObject
     }
 
     /**
-     * Check user an password
+     * Check user password
      * @return bool
      */
-    public function check(string $auth)
+    public function check(string $password)
     {
-        return \hash_equals($this->getAuth(), $auth);
-    }
+        $isValid = false;
 
-    /**
-     * Returns auth data
-     * @return ?string
-     */
-    public function getAuth()
-    {
-        return $this->auth;
+        $manager = PasswordAlgorithmManager::getInstance();
+
+        // Compatibility for WoltLab Suite < 5.4.
+        if (DoubleBcrypt::isLegacyDoubleBcrypt($this->password)) {
+            $algorithmName = 'DoubleBcrypt';
+            $hash = $this->password;
+        } else {
+            [$algorithmName, $hash] = \explode(':', $this->password, 2);
+        }
+
+        $algorithm = $manager->getAlgorithmFromName($algorithmName);
+
+        $isValid = $algorithm->verify($password, $hash);
+
+        if (!$isValid) {
+            return false;
+        }
+
+        $defaultAlgorithm = $manager->getDefaultAlgorithm();
+        if (\get_class($algorithm) !== \get_class($defaultAlgorithm) || $algorithm->needsRehash($hash)) {
+            $minecraftEditor = new MinecraftEditor($this);
+            $minecraftEditor->update([
+                'password' => $password,
+            ]);
+        }
+
+        // $isValid is always true at this point. However we intentionally use a variable
+        // that defaults to false to prevent accidents during refactoring.
+        \assert($isValid);
+
+        return $isValid;
     }
 
     /**
@@ -57,16 +82,7 @@ class Minecraft extends DatabaseObject
      */
     public function getUser()
     {
-        return explode(':', \base64_decode($this->getAuth()))[0];
-    }
-
-    /**
-     * Returns password
-     * @return ?string
-     */
-    public function getPassword()
-    {
-        return explode(':', \base64_decode($this->getAuth()))[1];
+        return $this->user;
     }
 
     /**

@@ -5,10 +5,15 @@ namespace wcf\acp\form;
 use wcf\data\minecraft\MinecraftAction;
 use wcf\form\AbstractFormBuilderForm;
 use wcf\system\form\builder\container\FormContainer;
-use wcf\system\form\builder\data\processor\VoidFormDataProcessor;
+use wcf\system\form\builder\data\processor\CustomFormDataProcessor;
 use wcf\system\form\builder\field\PasswordFormField;
 use wcf\system\form\builder\field\TextFormField;
 use wcf\system\form\builder\field\TitleFormField;
+use wcf\system\form\builder\IFormDocument;
+use wcf\system\user\authentication\password\algorithm\Bcrypt;
+use wcf\system\user\authentication\password\IPasswordAlgorithm;
+use wcf\system\user\authentication\password\PasswordAlgorithmManager;
+use wcf\system\user\multifactor\BackupMultifactorMethod;
 
 /**
  * MinecraftAdd Form class
@@ -19,6 +24,11 @@ use wcf\system\form\builder\field\TitleFormField;
  */
 class MinecraftAddForm extends AbstractFormBuilderForm
 {
+    /**
+     * @var IPasswordAlgorithm
+     */
+    private $algorithm;
+
     /**
      * @inheritDoc
      */
@@ -38,6 +48,14 @@ class MinecraftAddForm extends AbstractFormBuilderForm
      * @var \wcf\data\minecraft\Minecraft
      */
     public $formObject;
+
+    /**
+     * @inheritDoc
+     */
+    final public function __construct()
+    {
+        $this->algorithm = new Bcrypt(9);
+    }
 
     /**
      * @inheritDoc
@@ -74,27 +92,21 @@ class MinecraftAddForm extends AbstractFormBuilderForm
             $this->additionalFields['creationDate'] = TIME_NOW;
         }
 
-        $user = $this->form->getData()['data']['user'];
-
-        $password = $this->form->getData()['data']['password'];
-        if ($this->formAction == 'edit' && empty($password)) {
-            $password = $this->formObject->getPassword();
+        if (!empty($this->form->getData()['data']['password'])) {
+            $this->form->getDataHandler()->addProcessor(
+                new CustomFormDataProcessor(
+                    'password',
+                    function (IFormDocument $document, array $parameters) {
+                        if (!isset($document->getData()['password'])) {
+                            return $parameters;
+                        }
+                        $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($this->algorithm);
+                        $parameters['password'] = $algorithmName . ':' . $this->algorithm->hash($document->getData()['password']);
+                        return $parameters;
+                    }
+                )
+            );
         }
-
-        $this->additionalFields['auth'] = \base64_encode($user . ':' . $password);
-
-        $this->form->getDataHandler()->addProcessor(
-            new VoidFormDataProcessor(
-                'user',
-                true
-            )
-        );
-        $this->form->getDataHandler()->addProcessor(
-            new VoidFormDataProcessor(
-                'password',
-                true
-            )
-        );
 
         parent::save();
     }

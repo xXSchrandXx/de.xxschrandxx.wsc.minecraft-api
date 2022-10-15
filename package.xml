@@ -27,6 +27,9 @@
 
 	<instructions type="update" fromversion="3.0.2">
 		<instruction type="file" />
+		<instruction type="database">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_1.php</instruction>
+		<instruction type="script">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_2.php</instruction>
+		<instruction type="database">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_3.php</instruction>
 	</instructions>
 
 	<instructions type="install">

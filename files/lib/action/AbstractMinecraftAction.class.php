@@ -47,7 +47,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
         $response = parent::readHeaders();
 
         // validate Content-Type
-        if (!array_key_exists('content-type', $this->request->getHeaders())) {
+        if (!$this->request->hasHeader('content-type')) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Bad Request. Missing \'Content-Type\' in headers.', 400);
             } else {

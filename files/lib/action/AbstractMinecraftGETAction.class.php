@@ -2,9 +2,14 @@
 
 namespace wcf\action;
 
+use BadMethodCallException;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\ServerRequestFactory;
+use ParagonIE\ConstantTime\Base64;
+use Psr\Http\Message\ServerRequestInterface;
+use RangeException;
+use TypeError;
 use wcf\data\minecraft\Minecraft;
 use wcf\data\minecraft\MinecraftList;
 use wcf\system\event\EventHandler;
@@ -41,13 +46,13 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      * Minecraft the request came from.
      * @var Minecraft
      */
-    protected Minecraft $minecraft;
+    protected $minecraft;
 
     /**
      * Request headers
-     * @var ServerRequest
+     * @var ServerRequestInterface
      */
-    protected ServerRequest $request;
+    protected ServerRequestInterface $request;
 
     /**
      * @inheritDoc
@@ -131,35 +136,60 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         // validate header
         if (empty($this->request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Could not read headers.', 401);
+                return $this->send('Bad Request. Could not read headers.', 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
         }
 
         // validate Authorization
-        if (!array_key_exists('authorization', $this->request->getHeaders())) {
+        if (!$this->request->hasHeader('authorization')) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Unauthorized. Missing \'Authorization\' in headers.', 401);
+                return $this->send('Bad Request. Missing \'Authorization\' in headers.', 400);
             } else {
-                return $this->send('Unauthorized.', 401);
+                return $this->send('Bad Request.', 400);
             }
         }
-        $this->auth = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
-        if (count($this->auth) != 2) {
+        $auth = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
+        if (!$auth) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Unauthorized. \'Authorization\' wrong formatted.', 401);
+                return $this->send('Bad Request. \'Authorization\' wrong formatted.', 400);
             } else {
-                return $this->send('Unauthorized.', 401);
+                return $this->send('Bad Request.', 400);
             }
         }
-        if ($this->auth[0] != 'Basic') {
+        if ($auth[0] !== 'Basic') {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Unauthorized. \'Authorization\' not supported.', 401);
+                return $this->send('Bad Request. \'Authorization\' not supported.', 400);
             } else {
-                return $this->send('Unauthorized.', 401);
+                return $this->send('Bad Request.', 400);
             }
         }
+        try {
+            $decoded = Base64::decode($this->auth[1]);
+        } catch (RangeException $e) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. ' . $e->getMessage(), 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        } catch (TypeError $e) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. ' . $e->getMessage(), 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+        $decodedArr = \explode(':', $decoded, 2);
+        if (!$decodedArr) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. \'Authorization\' string wrong formatted.', 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+        $this->user = $decodedArr[0];
+        $this->password = $decodedArr[1];
 
         return null;
     }
@@ -170,24 +200,29 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
     public function checkPermissions()
     {
         $minecraftList = new MinecraftList();
+        $minecraftList->getConditionBuilder()->add('user = ?', [$this->user]);
         $minecraftList->readObjects();
-        /** @var \wcf\data\minecraft\Minecraft[] */
-        $minecrafts = $minecraftList->getObjects();
-
-        foreach ($minecrafts as $minecraft) {
-            if (hash_equals($minecraft->getAuth(), $this->auth[1])) {
-                $this->minecraft = $minecraft;
-                break;
-            }
-        }
-
-        if (isset($this->minecraft)) {
+        try {
+            /** @var Minecraft */
+            $this->minecraft = $minecraftList->getSingleObject();
+        } catch (BadMethodCallException $e) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Unauthorized. Unknown user or password.', 401);
             } else {
                 return $this->send('Unauthorized.', 401);
             }
         }
+
+        if (!$this->minecraft->check($this->password)) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Unauthorized. Unknown user or password.', 401);
+            } else {
+                return $this->send('Unauthorized.', 401);
+            }
+        }
+
+        unset($this->user);
+        unset($this->password);
 
         // call checkPermissions event
         EventHandler::getInstance()->fireAction($this, 'checkPermissions');
