@@ -19,13 +19,14 @@ foreach ($minecrafts as $minecraft) {
     try {
         $authEncoded = Base64::decode($minecraft->auth);
     } catch (RangeException $e) {
-        // Log
         continue;
     } catch (TypeError $e) {
-        // Log
         continue;
     }
-    $authArr = explode($authEncoded, 2);
+    $authArr = \explode($authEncoded, 2);
+    if (!$authArr) {
+        continue;
+    }
     $savedUser = $authArr[0];
     $savedPassword = $authArr[1];
     $editor->update([
