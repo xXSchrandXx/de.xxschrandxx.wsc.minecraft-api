@@ -25,7 +25,7 @@
 		<excludedpackage version="*">de.atrox-dev.minecraft.server</excludedpackage>
 	</excludedpackages>
 
-	<instructions type="update" fromversion="3.0.2">
+	<instructions type="update" fromversion="3.0.1">
 		<instruction type="acpTemplate"/>
 		<instruction type="file"/>
 		<instruction type="language"/>
