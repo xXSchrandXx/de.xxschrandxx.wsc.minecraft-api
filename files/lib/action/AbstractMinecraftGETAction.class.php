@@ -150,15 +150,8 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
                 return $this->send('Bad Request.', 400);
             }
         }
-        $auth = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
-        if (!$auth) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. \'Authorization\' wrong formatted.', 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-        if ($auth[0] !== 'Basic') {
+        [$method, $encoded] = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
+        if ($method !== 'Basic') {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Bad Request. \'Authorization\' not supported.', 400);
             } else {
@@ -166,7 +159,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             }
         }
         try {
-            $decoded = Base64::decode($this->auth[1]);
+            $decoded = Base64::decode($encoded);
         } catch (RangeException $e) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Bad Request. ' . $e->getMessage(), 400);

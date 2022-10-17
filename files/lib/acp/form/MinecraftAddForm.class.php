@@ -96,13 +96,14 @@ class MinecraftAddForm extends AbstractFormBuilderForm
             $this->additionalFields['creationDate'] = TIME_NOW;
         }
 
-        if (!empty($this->form->getData()['data']['password'])) {
-            /**
-             * @var IPasswordAlgorithm
-             */
-            $algorithm = new Bcrypt(9);
+        /** @var PasswordFormField $passwordField */
+        $passwordField = $this->form->getNodeById('password');
+
+        if (!empty($passwordField->getValue())) {
+            $manager = PasswordAlgorithmManager::getInstance();
+            $algorithm = $manager->getDefaultAlgorithm();
             $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
-            $this->form->getData()['data']['password'] = $algorithmName . ':' . $algorithm->hash($this->form->getData()['data']['password']);
+            $passwordField->value($algorithmName . ':' . $algorithm->hash($passwordField->getValue()));
         }
 
         parent::save();

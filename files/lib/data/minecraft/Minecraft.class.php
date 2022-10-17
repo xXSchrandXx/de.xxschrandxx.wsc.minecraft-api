@@ -58,8 +58,9 @@ class Minecraft extends DatabaseObject
         $defaultAlgorithm = $manager->getDefaultAlgorithm();
         if (\get_class($algorithm) !== \get_class($defaultAlgorithm) || $algorithm->needsRehash($hash)) {
             $minecraftEditor = new MinecraftEditor($this);
+            $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
             $minecraftEditor->update([
-                'password' => $password,
+                'password' => $algorithmName . ':' . $algorithm->hash($password)
             ]);
         }
 

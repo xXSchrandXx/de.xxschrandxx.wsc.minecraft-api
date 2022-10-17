@@ -4,10 +4,10 @@ use ParagonIE\ConstantTime\Base64;
 use wcf\data\minecraft\MinecraftEditor;
 use wcf\data\minecraft\MinecraftList;
 use wcf\system\database\exception\DatabaseException;
-use wcf\system\user\authentication\password\algorithm\Bcrypt;
 use wcf\system\user\authentication\password\PasswordAlgorithmManager;
 
-$algorithm = new Bcrypt(9);
+$manager = PasswordAlgorithmManager::getInstance();
+$algorithm = $manager->getDefaultAlgorithm();
 
 $minecraftList = new MinecraftList();
 $minecraftList->readObjects();
