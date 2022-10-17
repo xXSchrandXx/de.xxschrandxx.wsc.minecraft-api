@@ -2,6 +2,7 @@
 
 namespace wcf\acp\form;
 
+use wcf\data\IStorableObject;
 use wcf\data\minecraft\MinecraftAction;
 use wcf\data\minecraft\MinecraftList;
 use wcf\form\AbstractFormBuilderForm;
@@ -13,10 +14,7 @@ use wcf\system\form\builder\field\TitleFormField;
 use wcf\system\form\builder\field\validation\FormFieldValidationError;
 use wcf\system\form\builder\field\validation\FormFieldValidator;
 use wcf\system\form\builder\IFormDocument;
-use wcf\system\user\authentication\password\algorithm\Bcrypt;
-use wcf\system\user\authentication\password\IPasswordAlgorithm;
 use wcf\system\user\authentication\password\PasswordAlgorithmManager;
-use wcf\system\user\multifactor\BackupMultifactorMethod;
 
 /**
  * MinecraftAdd Form class
@@ -43,6 +41,7 @@ class MinecraftAddForm extends AbstractFormBuilderForm
     public $objectActionClass = MinecraftAction::class;
 
     /**
+     * @inheritDoc
      * @var \wcf\data\minecraft\Minecraft
      */
     public $formObject;
@@ -85,6 +84,25 @@ class MinecraftAddForm extends AbstractFormBuilderForm
                         ->required($this->formAction !== 'edit')
                 ])
         );
+
+        $this->form->getDataHandler()->addProcessor(new CustomFormDataProcessor(
+            'password',
+            static function (IFormDocument $document, array $parameters) {
+                /** @var PasswordFormField $passwordField */
+                $passwordField = $document->getNodeById('password');
+                if (!empty($passwordField->getSaveValue())) {
+                    $manager = PasswordAlgorithmManager::getInstance();
+                    $algorithm = $manager->getDefaultAlgorithm();
+                    $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
+                    $parameters['data']['password'] = $algorithmName . ':' . $algorithm->hash($passwordField->getSaveValue());
+                }
+                return $parameters;
+            },
+            static function (IFormDocument $document, array $parameters, IStorableObject $object) {
+                unset($parameters['data']['password']);
+                return $parameters;
+            }
+        ));
     }
 
     /**
@@ -94,16 +112,6 @@ class MinecraftAddForm extends AbstractFormBuilderForm
     {
         if ($this->formAction == 'create') {
             $this->additionalFields['creationDate'] = TIME_NOW;
-        }
-
-        /** @var PasswordFormField $passwordField */
-        $passwordField = $this->form->getNodeById('password');
-
-        if (!empty($passwordField->getValue())) {
-            $manager = PasswordAlgorithmManager::getInstance();
-            $algorithm = $manager->getDefaultAlgorithm();
-            $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
-            $passwordField->value($algorithmName . ':' . $algorithm->hash($passwordField->getValue()));
         }
 
         parent::save();
