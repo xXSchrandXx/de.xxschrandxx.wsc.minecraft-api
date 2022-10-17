@@ -45,13 +45,7 @@ class Minecraft extends DatabaseObject
 
         $manager = PasswordAlgorithmManager::getInstance();
 
-        // Compatibility for WoltLab Suite < 5.4.
-        if (DoubleBcrypt::isLegacyDoubleBcrypt($this->password)) {
-            $algorithmName = 'DoubleBcrypt';
-            $hash = $this->password;
-        } else {
-            [$algorithmName, $hash] = \explode(':', $this->password, 2);
-        }
+        [$algorithmName, $hash] = \explode(':', $this->password, 2);
 
         $algorithm = $manager->getAlgorithmFromName($algorithmName);
 

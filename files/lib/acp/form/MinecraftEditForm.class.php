@@ -35,4 +35,16 @@ class MinecraftEditForm extends MinecraftAddForm
             throw new IllegalLinkException();
         }
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function setFormObjectData()
+    {
+        parent::setFormObjectData();
+
+        /** @var PasswordFormField $passwordField */
+        $passwordField = $this->form->getNodeById('password');
+        $passwordField->value('');
+    }
 }

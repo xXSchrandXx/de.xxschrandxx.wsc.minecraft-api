@@ -3,6 +3,7 @@
 use ParagonIE\ConstantTime\Base64;
 use wcf\data\minecraft\MinecraftEditor;
 use wcf\data\minecraft\MinecraftList;
+use wcf\system\database\exception\DatabaseException;
 use wcf\system\user\authentication\password\algorithm\Bcrypt;
 use wcf\system\user\authentication\password\PasswordAlgorithmManager;
 
@@ -23,14 +24,13 @@ foreach ($minecrafts as $minecraft) {
     } catch (TypeError $e) {
         continue;
     }
-    $authArr = \explode(':', $authEncoded, 2);
-    if (!$authArr) {
-        continue;
+    [$user, $password] = \explode(':', $authEncoded, 2);
+    try {
+        $editor->update([
+            'user' => $user,
+            'password' => $algorithmName . ':' . $algorithm->hash($password)
+        ]);
+    } catch (DatabaseException $e) {
+        \wcf\functions\exception\logThrowable($e);
     }
-    $savedUser = $authArr[0];
-    $savedPassword = $authArr[1];
-    $editor->update([
-        'user' => $savedUser,
-        'password' => $algorithmName . ':' . $algorithm->hash($savedPassword)
-    ]);
 }

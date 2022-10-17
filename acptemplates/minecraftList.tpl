@@ -31,6 +31,7 @@
                     <th></th>
                     <th>{lang}wcf.global.objectID{/lang}</th>
                     <th>{lang}wcf.global.title{/lang}</th>
+                    <th>{lang}wcf.acp.page.minecraftList.user{/lang}</th>
                     <th>{lang}wcf.acp.page.minecraftList.creationDate{/lang}</th>
                 </tr>
             </thead>
@@ -47,6 +48,7 @@
                         </td>
                         <td class="columnID">{#$object->getObjectID()}</td>
                         <td class="columnTitle">{$object->getTitle()}</td>
+						<td class="columnUsername">{$object->getUser()}</td>
                         <td class="columnDate">{@$object->getCreatedTimestamp()|time}</td>
                     </tr>
                 {/foreach}

@@ -28,11 +28,6 @@ use wcf\system\user\multifactor\BackupMultifactorMethod;
 class MinecraftAddForm extends AbstractFormBuilderForm
 {
     /**
-     * @var IPasswordAlgorithm
-     */
-    private $algorithm;
-
-    /**
      * @inheritDoc
      */
     public $neededPermissions = ['admin.minecraft.canManageConnection'];
@@ -55,14 +50,6 @@ class MinecraftAddForm extends AbstractFormBuilderForm
     /**
      * @inheritDoc
      */
-    final public function __construct()
-    {
-        $this->algorithm = new Bcrypt(9);
-    }
-
-    /**
-     * @inheritDoc
-     */
     protected function createForm()
     {
         parent::createForm();
@@ -78,7 +65,7 @@ class MinecraftAddForm extends AbstractFormBuilderForm
                         ->label('wcf.acp.form.minecraftAdd.user')
                         ->required()
                         ->addValidator(new FormFieldValidator('duplicate', function (TextFormField $field) {
-                            if ($field->getValue() === $field->getSaveValue()) {
+                            if ($this->formAction === 'edit' && $this->formObject->getUser() === $field->getValue()) {
                                 return;
                             }
                             $minecraftList = new MinecraftList();
@@ -86,7 +73,8 @@ class MinecraftAddForm extends AbstractFormBuilderForm
                             if ($minecraftList->countObjects() !== 0) {
                                 $field->addValidationError(
                                     new FormFieldValidationError(
-                                        'duplicate'
+                                        'duplicate',
+                                        'wcf.acp.form.minecraftAdd.user.error.duplicate'
                                     )
                                 );
                             }
@@ -109,19 +97,12 @@ class MinecraftAddForm extends AbstractFormBuilderForm
         }
 
         if (!empty($this->form->getData()['data']['password'])) {
-            $this->form->getDataHandler()->addProcessor(
-                new CustomFormDataProcessor(
-                    'password',
-                    function (IFormDocument $document, array $parameters) {
-                        if (!isset($document->getData()['password'])) {
-                            return $parameters;
-                        }
-                        $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($this->algorithm);
-                        $parameters['password'] = $algorithmName . ':' . $this->algorithm->hash($document->getData()['password']);
-                        return $parameters;
-                    }
-                )
-            );
+            /**
+             * @var IPasswordAlgorithm
+             */
+            $algorithm = new Bcrypt(9);
+            $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
+            $this->form->getData()['data']['password'] = $algorithmName . ':' . $algorithm->hash($this->form->getData()['data']['password']);
         }
 
         parent::save();

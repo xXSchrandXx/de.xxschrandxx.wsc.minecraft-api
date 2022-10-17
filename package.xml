@@ -26,20 +26,22 @@
 	</excludedpackages>
 
 	<instructions type="update" fromversion="3.0.2">
-		<instruction type="file" />
+		<instruction type="acpTemplate"/>
+		<instruction type="file"/>
+		<instruction type="language"/>
 		<instruction type="database">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_1.php</instruction>
 		<instruction type="script">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_2.php</instruction>
 		<instruction type="database">acp/database/update_de.xxschrarndxx.wsc.minecraft-api_3.php</instruction>
 	</instructions>
 
 	<instructions type="install">
-		<instruction type="acpTemplate" />
-		<instruction type="file" />
+		<instruction type="acpTemplate"/>
+		<instruction type="file"/>
 		<instruction type="language"/>
-		<instruction type="acpMenu" />
-		<instruction type="userGroupOption" />
-		<instruction type="option" />
-		<instruction type="objectType" />
+		<instruction type="acpMenu"/>
+		<instruction type="userGroupOption"/>
+		<instruction type="option"/>
+		<instruction type="objectType"/>
 		<instruction type="database">acp/database/install_de.xxschrarndxx.wsc.minecraft-api.php</instruction>
 	</instructions>
 </package>
