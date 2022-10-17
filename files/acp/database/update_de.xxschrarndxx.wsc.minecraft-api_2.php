@@ -14,6 +14,8 @@ $minecraftList->readObjects();
 /** @var \wcf\data\minecraft\Minecraft */
 $minecrafts = $minecraftList->getObjects();
 
+$duplicates = [];
+
 foreach ($minecrafts as $minecraft) {
     $editor = new MinecraftEditor($minecraft);
     $algorithmName = PasswordAlgorithmManager::getInstance()->getNameFromAlgorithm($algorithm);
@@ -29,10 +31,12 @@ foreach ($minecrafts as $minecraft) {
         continue;
     }
     [$user, $password] = \explode(':', $authEncoded, 2);
-    $this->updateData($editor, $user, $password, $algorithmName, $algorithm);
+    $this->updateData($editor, $user, $password, $algorithmName, $algorithm, $duplicates);
 }
 
-function updateData($editor, $user, $password, $algorithmName, $algorithm, $i = 0)
+print($duplicates);
+
+function updateData($editor, $user, $password, $algorithmName, $algorithm, &$duplicates, $i = 0)
 {
     try {
         $editor->update([
@@ -41,7 +45,8 @@ function updateData($editor, $user, $password, $algorithmName, $algorithm, $i = 
         ]);
     } catch (DatabaseException $e) {
         $i = $i++;
-        updateData($editor, $user . $i, $password, $algorithmName, $algorithm, $i);
+        updateData($editor, $user . $i, $password, $algorithmName, $algorithm, $duplicates, $i);
+        $duplicates[$user] = $user . $i;
         \wcf\functions\exception\logThrowable($e);
     }
 }
