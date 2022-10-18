@@ -73,8 +73,18 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     {
         $response = parent::readParameters();
 
+        $body = $this->request->getBody();
+
+        if (!($body instanceof string)) {
+            if (ENABLE_DEBUG_MODE) {
+                return $this->send('Bad Request. Requestbody is no string.', 400);
+            } else {
+                return $this->send('Bad Request.', 400);
+            }
+        }
+
         try {
-            $this->json = JSON::decode($this->request->getBody()->getContents());
+            $this->json = JSON::decode($body);
         } catch (SystemException $e) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send($e->getMessage(), 400);
