@@ -4,6 +4,7 @@ namespace wcf\action;
 
 use Laminas\Diactoros\Response\JsonResponse;
 use SystemException;
+use TypeError;
 use wcf\util\JSON;
 
 /**
@@ -21,6 +22,12 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     protected $supportetMethod = 'POST';
 
     /**
+     * decoded JSON request body
+     * @var array
+     */
+    protected $json;
+
+    /**
      * Returns decoded Request-JSON
      * @return array
      */
@@ -30,12 +37,26 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     }
 
     /**
+     * Returns weather the data exists
+     * @return bool
+     */
+    public function hasData(string $name)
+    {
+        try {
+            return array_key_exists($name, $this->json);
+        } catch (TypeError $e) {
+            // Catch 'array_key_exists(): Argument #2 ($array) must be of type array, null given'
+            return false;
+        }
+    }
+
+    /**
      * Returns request data
-     * @return string|int
+     * @return mixed
      */
     public function getData(string $name)
     {
-        return $this->getJSON()[$name];
+        return $this->json[$name];
     }
 
     /**
@@ -84,7 +105,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
         }
 
         try {
-            $this->json = JSON::decode($body);
+            $this->json = JSON::decode((string) $body);
         } catch (SystemException $e) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send($e->getMessage(), 400);
