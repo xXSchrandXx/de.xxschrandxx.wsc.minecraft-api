@@ -4,7 +4,6 @@ namespace wcf\action;
 
 use BadMethodCallException;
 use Laminas\Diactoros\Response\JsonResponse;
-use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\ServerRequestFactory;
 use ParagonIE\ConstantTime\Base64;
 use Psr\Http\Message\ServerRequestInterface;
@@ -220,6 +219,17 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         // call checkPermissions event
         EventHandler::getInstance()->fireAction($this, 'checkPermissions');
     }
+
+    /**
+     * @inheritDoc
+     * @return ?JsonResponse
+     */
+    public function readParameters(): ?JsonResponse
+    {
+        parent::readParameters();
+        return null;
+    }
+
 
     /**
      * Executes this action.
