@@ -3,7 +3,6 @@
 namespace wcf\action;
 
 use Laminas\Diactoros\Response\JsonResponse;
-use SystemException;
 use TypeError;
 use wcf\util\JSON;
 
@@ -94,21 +93,11 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     {
         $response = parent::readParameters();
 
-        $body = $this->request->getBody();
-
-        if (!($body instanceof string)) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Requestbody is no string.', 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-
         try {
-            $this->json = JSON::decode((string) $body);
-        } catch (SystemException $e) {
+            $this->json = JSON::decode((string) $this->request->getBody());
+        } catch (\wcf\system\exception\SystemException $e) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send($e->getMessage(), 400);
+                return $this->send('Bad Request. ' . $e->getMessage(), 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
