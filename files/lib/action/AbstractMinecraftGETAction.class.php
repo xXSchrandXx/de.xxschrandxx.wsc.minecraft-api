@@ -3,6 +3,7 @@
 namespace wcf\action;
 
 use BadMethodCallException;
+use Laminas\Diactoros\HeaderSecurity;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use ParagonIE\ConstantTime\Base64;
@@ -266,7 +267,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         if (!array_key_exists('statusCode', $data)) {
             $data['statusCode'] = $statusCode;
         }
-        if (!array_key_exists('status', $headers)) {
+        if (!array_key_exists('status', $data) && HeaderSecurity::isValid($status)) {
             $headers['status-message'] = [$status];
         }
         return new JsonResponse($data, $statusCode, $headers, $encodingOptions);
