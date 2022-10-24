@@ -267,7 +267,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         if (!array_key_exists('statusCode', $data)) {
             $data['statusCode'] = $statusCode;
         }
-        if (!array_key_exists('status', $data) && HeaderSecurity::isValid($status)) {
+        if (!array_key_exists('status', $headers) && HeaderSecurity::isValid($status)) {
             $headers['status-message'] = [$status];
         }
         return new JsonResponse($data, $statusCode, $headers, $encodingOptions);
