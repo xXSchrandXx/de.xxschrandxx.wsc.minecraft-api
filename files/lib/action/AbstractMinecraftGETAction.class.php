@@ -199,6 +199,10 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             /** @var Minecraft */
             $this->minecraft = $minecraftList->getSingleObject();
         } catch (BadMethodCallException $e) {
+            // handled by !isset 
+        }
+
+        if (!isset($this->minecraft)) {
             if (ENABLE_DEBUG_MODE) {
                 return $this->send('Unauthorized. Unknown user or password.', 401);
             } else {
