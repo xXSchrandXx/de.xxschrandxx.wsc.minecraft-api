@@ -78,17 +78,17 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         // Read header
         $this->request = ServerRequestFactory::fromGlobals();
 
-        if ($this->supportetMethod !== $this->request->getMethod()) {
+        if (!isset($this->request)) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Unsupported HTTP method.', 400);
+                return $this->send('Bad Request. Could not read request.', 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
         }
 
-        if (!isset($this->request)) {
+        if ($this->supportetMethod !== $this->request->getMethod()) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Could not read request.', 400);
+                return $this->send('Bad Request. \'' . $this->request->getMethod() . '\' is a unsupported HTTP method.', 400);
             } else {
                 return $this->send('Bad Request.', 400);
             }
