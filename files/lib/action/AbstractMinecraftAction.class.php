@@ -66,6 +66,10 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     {
         $response = parent::readHeaders();
 
+        if ($response !== null) {
+            return $response;
+        }
+
         // validate Content-Type
         if (!$this->request->hasHeader('content-type')) {
             if (ENABLE_DEBUG_MODE) {
@@ -92,6 +96,10 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     public function readParameters(): ?JsonResponse
     {
         $response = parent::readParameters();
+
+        if ($response !== null) {
+            return $response;
+        }
 
         try {
             $this->json = JSON::decode((string) $this->request->getBody());
