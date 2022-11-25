@@ -108,6 +108,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         if ($result !== null) {
             return $result;
         }
+
         if (isset($this->availableMinecraftIDs)) {
             if (!in_array($this->minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
                 if (ENABLE_DEBUG_MODE) {
