@@ -101,11 +101,13 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
 
         // check permissions
         try {
-            $this->checkPermissions();
+            $result = $this->checkPermissions();
         } catch (PermissionDeniedException $e) {
-            return $this->send($e->getMessage(), 401);
+            $result = $this->send($e->getMessage(), 401);
         }
-
+        if ($result !== null) {
+            return $result;
+        }
         if (isset($this->availableMinecraftIDs)) {
             if (!in_array($this->minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
                 if (ENABLE_DEBUG_MODE) {
