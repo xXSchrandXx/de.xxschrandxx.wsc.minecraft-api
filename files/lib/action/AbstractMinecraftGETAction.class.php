@@ -3,6 +3,7 @@
 namespace wcf\action;
 
 use BadMethodCallException;
+use Exception;
 use Laminas\Diactoros\HeaderSecurity;
 use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -14,6 +15,7 @@ use wcf\data\minecraft\Minecraft;
 use wcf\data\minecraft\MinecraftList;
 use wcf\system\event\EventHandler;
 use wcf\system\exception\IllegalLinkException;
+use wcf\system\exception\MinecraftException;
 use wcf\system\exception\PermissionDeniedException;
 use wcf\system\flood\FloodControl;
 use wcf\system\request\RouteHandler;
@@ -57,10 +59,42 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
     /**
      * @inheritDoc
      */
-    public function __run(): ?JsonResponse
+    public function __run(): JsonResponse
+    {
+        try {
+            $this->prepare();
+
+            $this->readHeaders();
+
+            $this->checkPermissions();
+
+            $this->checkModules();
+
+            $this->readParameters();
+
+            return $this->execute();
+        } catch (MinecraftException $e) {
+            return $e->getResponse();
+        } catch (Exception $e) {
+            $headers  = [];
+            if (HeaderSecurity::isValid($e->getMessage())) {
+                $headers['status-message'] = [$e->getMessage()];
+            }
+            return new JsonResponse($e, $e->getCode(), $headers);
+        }
+
+        return $this->send('Internal Error.', 500);
+    }
+
+    /**
+     * Prepares run
+     * @return void
+     * @throws MinecraftException
+     */
+    public function prepare(): void
     {
         if (!RouteHandler::getInstance()->secureConnection()) {
-            return $this->send('SSL Certificate Required', 496);
+            throw $this->exception('SSL Certificate Required', 496);
         }
 
         // Flood control
@@ -71,7 +105,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             $time = \ceil(TIME_NOW / $secs) * $secs;
             $data = FloodControl::getInstance()->countContent($this->floodgate, new \DateInterval('PT' . MINECRAFT_FLOODGATE_RESETTIME . 'M'), $time);
             if ($data['count'] > MINECRAFT_FLOODGATE_MAXREQUESTS) {
-                return $this->send('Too Many Requests.', 429, [], ['retryAfter' => $time - TIME_NOW]);
+                throw $this->exception('Too Many Requests.', 429, [], ['retryAfter' => $time - TIME_NOW]);
             }
         }
 
@@ -80,120 +114,82 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
 
         if (!isset($this->request)) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Could not read request.', 400);
+                throw $this->exception('Bad Request. Could not read request.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
 
         if ($this->supportetMethod !== $this->request->getMethod()) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. \'' . $this->request->getMethod() . '\' is a unsupported HTTP method.', 400);
+                throw $this->exception('Bad Request. \'' . $this->request->getMethod() . '\' is a unsupported HTTP method.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
-
-        $result = $this->readHeaders();
-        if ($result !== null) {
-            return $result;
-        }
-
-        // check permissions
-        try {
-            $result = $this->checkPermissions();
-        } catch (PermissionDeniedException $e) {
-            $result = $this->send($e->getMessage(), 401);
-        }
-        if ($result !== null) {
-            return $result;
-        }
-
-        if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($this->minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
-                if (ENABLE_DEBUG_MODE) {
-                    return $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
-                } else {
-                    return $this->send('Bad Request.', 400);
-                }
-            }
-        }
-
-        $result = $this->readParameters();
-        if ($result !== null) {
-            return $result;
-        }
-        $result = $this->execute();
-        if ($result === null) {
-            return $this->send('Internal Error.', 500);
-        }
-        return $result;
     }
 
     /**
      * Reads header
-     * @return ?JsonResponse
      */
-    public function readHeaders(): ?JsonResponse
+    public function readHeaders(): void
     {
         // validate header
         if (empty($this->request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Could not read headers.', 400);
+                throw $this->exception('Bad Request. Could not read headers.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
 
         // validate Authorization
         if (!$this->request->hasHeader('authorization')) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Missing \'Authorization\' in headers.', 400);
+                throw $this->exception('Bad Request. Missing \'Authorization\' in headers.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
         [$method, $encoded] = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
         if ($method !== 'Basic') {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. \'Authorization\' not supported.', 400);
+                throw $this->exception('Bad Request. \'Authorization\' not supported.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
         try {
             $decoded = Base64::decode($encoded);
         } catch (RangeException $e) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. ' . $e->getMessage(), 400);
+                throw $this->exception('Bad Request. ' . $e->getMessage(), 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         } catch (TypeError $e) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. ' . $e->getMessage(), 400);
+                throw $this->exception('Bad Request. ' . $e->getMessage(), 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
         $decodedArr = \explode(':', $decoded, 2);
         if (!$decodedArr) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. \'Authorization\' string wrong formatted.', 400);
+                throw $this->exception('Bad Request. \'Authorization\' string wrong formatted.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
         $this->user = $decodedArr[0];
         $this->password = $decodedArr[1];
-
-        return null;
     }
 
     /**
      * @inheritDoc
      */
-    public function checkPermissions()
+    public function checkPermissions(): void
     {
         $minecraftList = new MinecraftList();
         $minecraftList->getConditionBuilder()->add('user = ?', [$this->user]);
@@ -207,17 +203,17 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
 
         if (!isset($this->minecraft)) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Unauthorized. Unknown user or password.', 401);
+                throw $this->exception('Unauthorized. Unknown user or password.', 401);
             } else {
-                return $this->send('Unauthorized.', 401);
+                throw $this->exception('Unauthorized.', 401);
             }
         }
 
         if (!$this->minecraft->check($this->password)) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Unauthorized. Unknown user or password.', 401);
+                throw $this->exception('Unauthorized. Unknown user or password.', 401);
             } else {
-                return $this->send('Unauthorized.', 401);
+                throw $this->exception('Unauthorized.', 401);
             }
         }
 
@@ -228,34 +224,26 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         EventHandler::getInstance()->fireAction($this, 'checkPermissions');
     }
 
-    /**
-     * @inheritDoc
-     * @return ?JsonResponse
-     */
-    public function readParameters(): ?JsonResponse
+    public function checkModules(): void
     {
-        parent::readParameters();
-        return null;
-    }
+        if (isset($this->availableMinecraftIDs)) {
+            if (!in_array($this->minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
+                if (ENABLE_DEBUG_MODE) {
+                    throw $this->exception('Bad Request. Unknown \'Minecraft-Id\'.', 400);
+                } else {
+                    throw $this->exception('Bad Request.', 400);
+                }
+            }
+        }
 
+        parent::checkModules();
+    }
 
     /**
      * Executes this action.
-     * @return ?JsonResponse
+     * @return JsonResponse
      */
-    public function execute(): ?JsonResponse
-    {
-        // check modules
-        try {
-            $this->checkModules();
-        } catch (IllegalLinkException $e) {
-            return $this->send($e->getMessage(), 404);
-        }
-
-        // call execute event
-        EventHandler::getInstance()->fireAction($this, 'execute');
-        return null;
-    }
+    public abstract function execute(): JsonResponse;
 
     /**
      * Creates the JSON-Response
@@ -278,5 +266,20 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             $headers['status-message'] = [$status];
         }
         return new JsonResponse($data, $statusCode, $headers, $encodingOptions);
+    }
+
+    /**
+     * Creates the MinecraftException
+     * @param string $status Status-Message
+     * @param int $statusCode Status-Code (between {@link JsonResponse::MIN_STATUS_CODE_VALUE} and {@link JsonResponse::MAX_STATUS_CODE_VALUE})
+     * @param array $data JSON-Data
+     * @param array $headers Headers
+     * @param int $encodingOptions {@link JsonResponse::DEFAULT_JSON_FLAGS}
+     * @throws Exception\InvalidArgumentException if unable to encode the $data to JSON or not valid $statusCode.
+     */
+    protected function exception(string $status = '', int $statusCode = 0, array $data = [], array $headers = [], int $encodingOptions = JsonResponse::DEFAULT_JSON_FLAGS): MinecraftException
+    {
+        $response = $this->send($status, $statusCode, $data, $headers, $encodingOptions);
+        return new MinecraftException($status, $statusCode, $response);
     }
 }
