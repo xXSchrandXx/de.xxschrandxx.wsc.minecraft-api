@@ -14,9 +14,7 @@ use TypeError;
 use wcf\data\minecraft\Minecraft;
 use wcf\data\minecraft\MinecraftList;
 use wcf\system\event\EventHandler;
-use wcf\system\exception\IllegalLinkException;
 use wcf\system\exception\MinecraftException;
-use wcf\system\exception\PermissionDeniedException;
 use wcf\system\flood\FloodControl;
 use wcf\system\request\RouteHandler;
 use wcf\util\StringUtil;
@@ -224,6 +222,9 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
         EventHandler::getInstance()->fireAction($this, 'checkPermissions');
     }
 
+    /**
+     * @inheritDoc
+     */
     public function checkModules(): void
     {
         if (isset($this->availableMinecraftIDs)) {
@@ -243,7 +244,11 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
      * Executes this action.
      * @return JsonResponse
      */
-    public abstract function execute(): JsonResponse;
+    public function execute()
+    {
+        // call execute event
+        EventHandler::getInstance()->fireAction($this, 'execute');
+    }
 
     /**
      * Creates the JSON-Response
