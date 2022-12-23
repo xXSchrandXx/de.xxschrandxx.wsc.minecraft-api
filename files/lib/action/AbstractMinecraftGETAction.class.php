@@ -78,7 +78,15 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             if (HeaderSecurity::isValid($e->getMessage())) {
                 $headers['status-message'] = [$e->getMessage()];
             }
-            return new JsonResponse($e, $e->getCode(), $headers);
+            $code = 500;
+            if (100 <= $e->getCode() && $e->getCode() <= 599) {
+                $code = $e->getCode();
+            }
+            return new JsonResponse([
+                'status' => $e->getMessage(),
+                'statusCode' => $e->getCode(),
+                'trace' => $e->getTraceAsString()
+            ], $code, $headers);
         }
 
         return $this->send('Internal Error.', 500);
