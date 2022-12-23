@@ -2,7 +2,6 @@
 
 namespace wcf\action;
 
-use Laminas\Diactoros\Response\JsonResponse;
 use TypeError;
 use wcf\util\JSON;
 
@@ -61,7 +60,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     /**
      * Reads header
      */
-    public function readHeaders()
+    public function readHeaders(): void
     {
         parent::readHeaders();
 
@@ -85,7 +84,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     /**
      * @inheritDoc
      */
-    public function readParameters()
+    public function readParameters(): void
     {
         parent::readParameters();
 
