@@ -60,57 +60,35 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
 
     /**
      * Reads header
-     * @return ?JsonResponse
      */
-    public function readHeaders(): ?JsonResponse
+    public function readHeaders()
     {
-        $response = parent::readHeaders();
-
-        if ($response !== null) {
-            return $response;
-        }
+        parent::readHeaders();
 
         // validate Content-Type
         if (!$this->request->hasHeader('content-type')) {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Missing \'Content-Type\' in headers.', 400);
+                throw $this->exception('Bad Request. Missing \'Content-Type\' in headers.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
         if ($this->request->getHeaderLine('content-type') !== 'application/json') {
             if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. Wrong \'Content-Type\'.', 400);
+                throw $this->exception('Bad Request. Wrong \'Content-Type\'.', 400);
             } else {
-                return $this->send('Bad Request.', 400);
+                throw $this->exception('Bad Request.', 400);
             }
         }
-
-        return $response;
     }
 
     /**
-     * Reads the given parameters.
-     * @return ?JsonResponse
+     * @inheritDoc
      */
-    public function readParameters(): ?JsonResponse
+    public function readParameters()
     {
-        $response = parent::readParameters();
+        parent::readParameters();
 
-        if ($response !== null) {
-            return $response;
-        }
-
-        try {
-            $this->json = JSON::decode((string) $this->request->getBody());
-        } catch (\wcf\system\exception\SystemException $e) {
-            if (ENABLE_DEBUG_MODE) {
-                return $this->send('Bad Request. ' . $e->getMessage(), 400);
-            } else {
-                return $this->send('Bad Request.', 400);
-            }
-        }
-
-        return $response;
+        $this->json = JSON::decode((string) $this->request->getBody());
     }
 }
