@@ -204,7 +204,7 @@ abstract class AbstractMinecraftGETAction extends AbstractAction
             /** @var Minecraft */
             $this->minecraft = $minecraftList->getSingleObject();
         } catch (BadMethodCallException $e) {
-            // handled by !isset 
+            // handled by !isset
         }
 
         if (!isset($this->minecraft)) {
