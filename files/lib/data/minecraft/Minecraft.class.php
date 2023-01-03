@@ -37,9 +37,13 @@ class Minecraft extends DatabaseObject
 
     /**
      * Check user password
+     * @param string $password
      * @return bool
      */
-    public function check(#[\wcf\SensitiveArgument()] string $password)
+    public function check(
+        #[\SensitiveParameter]
+        $password
+        ): bool
     {
         $isValid = false;
 
