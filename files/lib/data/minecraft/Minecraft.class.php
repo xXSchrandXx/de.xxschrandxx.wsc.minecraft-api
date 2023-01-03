@@ -43,8 +43,7 @@ class Minecraft extends DatabaseObject
     public function check(
         #[\SensitiveParameter]
         $password
-    ): bool
-    {
+    ): bool {
         $isValid = false;
 
         $manager = PasswordAlgorithmManager::getInstance();
