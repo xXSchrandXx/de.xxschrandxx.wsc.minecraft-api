@@ -322,7 +322,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
      * Executes this action.
      * @return JsonResponse
      */
-    public abstract function execute($parameters): JsonResponse;
+    abstract public function execute($parameters): JsonResponse;
 
     /**
      * Creates the JSON-Response
