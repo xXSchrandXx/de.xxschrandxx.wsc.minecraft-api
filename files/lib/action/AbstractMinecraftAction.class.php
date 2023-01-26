@@ -2,7 +2,8 @@
 
 namespace wcf\action;
 
-use TypeError;
+use SystemException;
+use wcf\data\minecraft\Minecraft;
 use wcf\util\JSON;
 
 /**
@@ -17,66 +18,29 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     /**
      * @inheritDoc
      */
-    protected $supportetMethod = 'POST';
+    public $supportetMethod = 'POST';
 
     /**
-     * decoded JSON request body
-     * @var array
+     * @inheritDoc
      */
-    protected $json;
-
-    /**
-     * Returns decoded Request-JSON
-     * @return array
-     */
-    public function getJSON()
+    public function validateHeader($request, &$response): void
     {
-        return $this->json;
-    }
-
-    /**
-     * Returns weather the data exists
-     * @return bool
-     */
-    public function hasData(string $name)
-    {
-        try {
-            return array_key_exists($name, $this->json);
-        } catch (TypeError $e) {
-            // Catch 'array_key_exists(): Argument #2 ($array) must be of type array, null given'
-            return false;
-        }
-    }
-
-    /**
-     * Returns request data
-     * @return mixed
-     */
-    public function getData(string $name)
-    {
-        return $this->json[$name];
-    }
-
-    /**
-     * Reads header
-     */
-    public function readHeaders(): void
-    {
-        parent::readHeaders();
+        parent::validateHeader($request, $response);
 
         // validate Content-Type
-        if (!$this->request->hasHeader('content-type')) {
+        if (!$request->hasHeader('content-type')) {
             if (ENABLE_DEBUG_MODE) {
-                throw $this->exception('Bad Request. Missing \'Content-Type\' in headers.', 400);
+                $response = $this->send('Bad Request. Missing \'Content-Type\' in headers.', 400);
             } else {
-                throw $this->exception('Bad Request.', 400);
+                $response = $this->send('Bad Request.', 400);
             }
+            return;
         }
-        if ($this->request->getHeaderLine('content-type') !== 'application/json') {
+        if ($request->getHeaderLine('content-type') !== 'application/json') {
             if (ENABLE_DEBUG_MODE) {
-                throw $this->exception('Bad Request. Wrong \'Content-Type\'.', 400);
+                $response = $this->send('Bad Request. Wrong \'Content-Type\'.', 400);
             } else {
-                throw $this->exception('Bad Request.', 400);
+                $response = $this->send('Bad Request.', 400);
             }
         }
     }
@@ -84,10 +48,17 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     /**
      * @inheritDoc
      */
-    public function readParameters(): void
+    public function readParameters($request, &$parameters, &$response): void
     {
-        parent::readParameters();
-
-        $this->json = JSON::decode((string) $this->request->getBody());
+        try {
+            $parameters += JSON::decode((string) $request->getBody());
+        } catch (SystemException $e) {
+            if (ENABLE_DEBUG_MODE) {
+                $response = $this->send('Bad Request. Could not decode json.', 400);
+            } else {
+                $response = $this->send('Bad Request.', 400);
+            }
+            return;
+        }
     }
 }
