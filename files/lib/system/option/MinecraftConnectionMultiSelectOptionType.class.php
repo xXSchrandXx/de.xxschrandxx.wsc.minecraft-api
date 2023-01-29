@@ -66,6 +66,6 @@ class MinecraftConnectionMultiSelectOptionType extends AbstractOptionType
         if (!\is_array($newValue)) {
             $newValue = [];
         }
-        return \implode("\n", ArrayUtil::toIntegerArray(StringUtil::unifyNewlines($newValue)));
+        return \implode("\n", ArrayUtil::toIntegerArray($newValue));
     }
 }
