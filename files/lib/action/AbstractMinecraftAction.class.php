@@ -2,6 +2,7 @@
 
 namespace wcf\action;
 
+use Laminas\Diactoros\Response\JsonResponse;
 use SystemException;
 use wcf\util\JSON;
 
@@ -25,6 +26,9 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     public function validateHeader($request, &$response): void
     {
         parent::validateHeader($request, $response);
+        if ($response instanceof JsonResponse) {
+            return;
+        }
 
         // validate Content-Type
         if (!$request->hasHeader('content-type')) {
