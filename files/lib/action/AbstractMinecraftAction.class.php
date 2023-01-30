@@ -3,7 +3,6 @@
 namespace wcf\action;
 
 use SystemException;
-use wcf\data\minecraft\Minecraft;
 use wcf\util\JSON;
 
 /**
