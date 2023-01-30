@@ -43,11 +43,15 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
     protected $supportetMethod = 'GET';
 
     /**
-     * needed modules to execute this action
+     * Needed modules to execute this action
      * @var string[]
      */
     public $neededModules = [];
 
+    /**
+     * Will be removed with release for WSC 6.0.0
+     * @deprecated
+     */
     public function __run()
     {
         return $this->handle(ServerRequestFactory::fromGlobals());
@@ -58,7 +62,10 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): JsonResponse
     {
+        // load EventHandler
         $eventHandler = EventHandler::getInstance();
+
+        // Set default response
         $response = null;
 
         // validate Request
@@ -86,13 +93,6 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
         ];
         $eventHandler->fireAction($this, 'getMinecraft');
 
-        // check Modules
-        $this->checkModules($minecraft, $response);
-        if ($response instanceof JsonResponse) {
-            return $response;
-        }
-        $eventHandler->fireAction($this, 'checkModules');
-
         // reads Parameters
         $this->readParameters($request, $parameters, $response);
         if ($response instanceof JsonResponse) {
@@ -107,11 +107,13 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
         }
         $eventHandler->fireAction($this, 'validateParameters', $parameters);
 
-        // executes action
+        // executes Action
         $response = $this->execute($parameters);
+        // set Response in parameters for event (only because events should be able to modify the response)
         $parameters['response'] = $response;
         $eventHandler->fireAction($this, 'execute', $parameters);
 
+        // set final response
         if (isset($parameters['response']) && $parameters['response'] instanceof JsonResponse) {
             return $parameters['response'];
         } else if (ENABLE_DEBUG_MODE) {
@@ -123,11 +125,27 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     /**
      * Validates request.
-     * Checks floodgate and request method.
+     * Checks modules, ssl, floodgate and method.
+     * Should never be skipped
+     * @param $request
+     * @param &$response modifiable response
      * @return void
      */
-    private function prepare($request, &$response): void
+    public function prepare($request, &$response): void
     {
+        // Check Modules
+        foreach ($this->neededModules as $module) {
+            if (!\defined($module) || !\constant($module)) {
+                if (ENABLE_DEBUG_MODE) {
+                    $response = $this->send('Bad Request. Module not set \'' . $module . '\'.', 400);
+                } else {
+                    $response = $this->send('Bad Request.', 400);
+                }
+                return;
+            }
+        }
+
+        // Check secureConnection
         if (!RouteHandler::getInstance()->secureConnection()) {
             $response = $this->send('SSL Certificate Required', 496);
             return;
@@ -146,15 +164,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             }
         }
 
-        if (!isset($request)) {
-            if (ENABLE_DEBUG_MODE) {
-                $response =  $this->send('Bad Request. Could not read request.', 400);
-            } else {
-                $response =  $this->send('Bad Request.', 400);
-            }
-            return;
-        }
-
+        // Check Method
         if ($this->supportetMethod !== $request->getMethod()) {
             if (ENABLE_DEBUG_MODE) {
                 $response =  $this->send('Bad Request. \'' . $request->getMethod() . '\' is a unsupported HTTP method.', 400);
@@ -167,11 +177,13 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     /**
      * Validates header
+     * @param $request
+     * @param &$response modifiable response
      * @return void
      */
     public function validateHeader($request, &$response): void
     {
-        // validate header
+        // validate request has Headers
         if (empty($request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
                 $response =  $this->send('Bad Request. Could not read headers.', 400);
@@ -181,7 +193,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             return;
         }
 
-        // validate Authorization
+        // validate request has Authorization Header
         if (!$request->hasHeader('authorization')) {
             if (ENABLE_DEBUG_MODE) {
                 $response =  $this->send('Bad Request. Missing \'Authorization\' in headers.', 400);
@@ -194,12 +206,16 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     /**
      * Gets minecraft from header
+     * This method should not be modified
+     * @param $request
+     * @param &$response modifiable response
      * @return ?Minecraft
      */
     public function getMinecraft($request, &$response): ?Minecraft
     {
         // read header
         [$method, $encoded] = \explode(' ', $request->getHeaderLine('authorization'), 2);
+        // validate Authentication Method
         if ($method !== 'Basic') {
             if (ENABLE_DEBUG_MODE) {
                 $response =  $this->send('Bad Request. \'Authorization\' not supported.', 400);
@@ -208,6 +224,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             }
             return null;
         }
+        // Try to decode Authentication
         try {
             $decoded = Base64::decode($encoded);
         } catch (RangeException $e) {
@@ -225,7 +242,9 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             }
             return null;
         }
+        // split to user and password
         $decodedArr = \explode(':', $decoded, 2);
+        // validate that user and password are given
         if (!$decodedArr) {
             if (ENABLE_DEBUG_MODE) {
                 $response =  $this->send('Bad Request. \'Authorization\' string wrong formatted.', 400);
@@ -235,6 +254,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             return null;
         }
 
+        // search for Minecraft-Entry with given user
         $minecraftList = new MinecraftList();
         $minecraftList->getConditionBuilder()->add('user = ?', [$decodedArr[0]]);
         $minecraftList->readObjects();
@@ -245,6 +265,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             // handled by !isset
         }
 
+        // validate Minecraft-Entry exists
         if (!isset($minecraft)) {
             if (ENABLE_DEBUG_MODE) {
                 $response = $this->send('Unauthorized. Unknown user or password.', 401);
@@ -254,6 +275,19 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             return null;
         }
 
+        // check if Minecraft-Entry is allowed to be used for given action
+        if (isset($this->availableMinecraftIDs)) {
+            if (!in_array($minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
+                if (ENABLE_DEBUG_MODE) {
+                    $response = $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
+                } else {
+                    $response = $this->send('Bad Request.', 400);
+                }
+                return null;
+            }
+        }
+
+        // check password
         if (!$minecraft->check($decodedArr[1])) {
             if (ENABLE_DEBUG_MODE) {
                 $response = $this->send('Unauthorized. Unknown user or password.', 401);
@@ -267,37 +301,11 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
     }
 
     /**
-     * Checks the modules of this action.
-     * @return void
-     */
-    public function checkModules($minecraft, &$response): void
-    {
-        if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
-                if (ENABLE_DEBUG_MODE) {
-                    $response = $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
-                } else {
-                    $response = $this->send('Bad Request.', 400);
-                }
-                return;
-            }
-        }
-
-        // check modules
-        foreach ($this->neededModules as $module) {
-            if (!\defined($module) || !\constant($module)) {
-                if (ENABLE_DEBUG_MODE) {
-                    $response = $this->send('Bad Request. Module not set \'' . $module . '\'.', 400);
-                } else {
-                    $response = $this->send('Bad Request.', 400);
-                }
-                return;
-            }
-        }
-    }
-
-    /**
      * Reads the given parameters.
+     * Has no parameters to read with HTTP-GET method.
+     * @param $request
+     * @param array &$parameters modifiable parameters
+     * @param ?JsonResponse &$response modifiable response
      * @return void
      */
     public function readParameters($request, &$parameters, &$response): void
@@ -307,6 +315,9 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     /**
      * Validates the given parameters.
+     * Has no parameters to validate with HTTP-GET method.
+     * @param array $parameters to validate
+     * @param ?JsonResponse &$response modifiable response
      * @return void
      */
     public function validateParameters($parameters, &$response): void
@@ -316,6 +327,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     /**
      * Executes this action.
+     * @param array $parameters
      * @return JsonResponse
      */
     abstract public function execute($parameters): JsonResponse;

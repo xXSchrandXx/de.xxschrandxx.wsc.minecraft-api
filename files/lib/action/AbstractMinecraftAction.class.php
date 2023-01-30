@@ -30,7 +30,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
             return;
         }
 
-        // validate Content-Type
+        // validate request has Content-Type header
         if (!$request->hasHeader('content-type')) {
             if (ENABLE_DEBUG_MODE) {
                 $response = $this->send('Bad Request. Missing \'Content-Type\' in headers.', 400);
@@ -39,6 +39,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
             }
             return;
         }
+        // validate given Content-Type is json
         if ($request->getHeaderLine('content-type') !== 'application/json') {
             if (ENABLE_DEBUG_MODE) {
                 $response = $this->send('Bad Request. Wrong \'Content-Type\'.', 400);
@@ -53,6 +54,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
      */
     public function readParameters($request, &$parameters, &$response): void
     {
+        // try to decode given json
         try {
             $parameters += JSON::decode((string) $request->getBody());
         } catch (SystemException $e) {
