@@ -18,7 +18,7 @@ abstract class AbstractMinecraftAction extends AbstractMinecraftGETAction
     /**
      * @inheritDoc
      */
-    public $supportetMethod = 'POST';
+    protected $supportetMethod = 'POST';
 
     /**
      * @inheritDoc

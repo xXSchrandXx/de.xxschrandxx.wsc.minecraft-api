@@ -40,7 +40,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
      * Supported HTTP Method
      * @var string
      */
-    public $supportetMethod = 'GET';
+    protected $supportetMethod = 'GET';
 
     /**
      * needed modules to execute this action
