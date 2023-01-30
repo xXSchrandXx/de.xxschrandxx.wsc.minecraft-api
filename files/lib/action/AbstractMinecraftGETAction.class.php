@@ -50,10 +50,6 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
     public function __run()
     {
-        if (str_starts_with(WCF_VERSION, '6.')) {
-            return;
-        }
-
         return $this->handle(ServerRequestFactory::fromGlobals());
     }
 
