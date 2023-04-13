@@ -17,7 +17,7 @@
 			<controller>wcf\acp\form\MinecraftAddPage</controller>
 			<parent>wcf.acp.menu.link.configuration.minecraft.minecraftList</parent>
 			<permissions>admin.minecraft.canManageConnection</permissions>
-			<icon>fa-plus</icon>
+			<icon>plus</icon>
 		</acpmenuitem>
 	</import>
 </data>
