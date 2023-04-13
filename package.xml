@@ -26,6 +26,7 @@
 	</excludedpackages>
 
 	<instructions type="update" fromversion="4.0.0">
+		<instruction type="acpTemplate"/>
 		<instruction type="file"/>
 	</instructions>
 

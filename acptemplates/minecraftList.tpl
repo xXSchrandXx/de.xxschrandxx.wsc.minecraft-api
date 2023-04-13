@@ -7,9 +7,11 @@
 
     <nav class="contentHeaderNavigation">
         <ul>
-            <li><a href="{link controller='MinecraftAdd'}{/link}" class="button"><span
-                        class="icon icon16 fa-plus"></span>
-                    <span>{lang}wcf.acp.menu.link.configuration.minecraft.minecraftList.add{/lang}</span></a></li>
+            <li>
+				<a href="{link controller='MinecraftAdd'}{/link}" class="button">
+					{icon size=16 name='plus' type='solid'} {lang}wcf.acp.menu.link.configuration.minecraft.minecraftList.add{/lang}
+				</a>
+			</li>
             {event name='contentHeaderNavigation'}
         </ul>
     </nav>
@@ -18,7 +20,7 @@
 {hascontent}
 <div class="paginationTop">
     {content}
-    {pages print=true assign=pagesLinks controller="MinecraftList" link="pageNo=%d"}
+	    {pages print=true assign=pagesLinks controller="MinecraftList" link="pageNo=%d"}
     {/content}
 </div>
 {/hascontent}
@@ -35,13 +37,13 @@
                     <th>{lang}wcf.acp.page.minecraftList.creationDate{/lang}</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="jsReloadPageWhenEmpty">
                 {foreach from=$objects item=object}
                     <tr class="jsObjectActionObject" data-object-id="{@$object->getObjectID()}">
                         <td class="columnIcon">
                             <a href="{link controller='MinecraftEdit' id=$object->getObjectID()}{/link}"
                                 title="{lang}wcf.global.button.edit{/lang}" class="jsTooltip">
-								<span class="icon icon16 fa-pencil"></span>
+								{icon size=16 name='pencil' type='solid'}
 							</a>
                             {objectAction action="delete" objectTitle=$object->getTitle()}
                             {event name='rowButtons'}

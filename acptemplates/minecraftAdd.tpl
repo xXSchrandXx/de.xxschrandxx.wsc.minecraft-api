@@ -9,7 +9,7 @@
         <ul>
             <li>
 				<a href="{link controller='MinecraftList'}{/link}" class="button">
-					<span class="icon icon16 fa-list"></span>
+					{icon size=16 name='list' type='solid'}
                 	<span>{lang}wcf.acp.menu.link.configuration.minecraft.minecraftList{/lang}</span>
 				</a>
 			</li>
