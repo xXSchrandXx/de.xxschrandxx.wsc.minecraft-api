@@ -6,7 +6,6 @@ use BadMethodCallException;
 use Exception;
 use Laminas\Diactoros\HeaderSecurity;
 use Laminas\Diactoros\Response\JsonResponse;
-use Laminas\Diactoros\ServerRequestFactory;
 use ParagonIE\ConstantTime\Base64;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -47,15 +46,6 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
      * @var string[]
      */
     public $neededModules = [];
-
-    /**
-     * Will be removed with release for WSC 6.0.0
-     * @deprecated
-     */
-    public function __run()
-    {
-        return $this->handle(ServerRequestFactory::fromGlobals());
-    }
 
     /**
      * @inheritDoc
