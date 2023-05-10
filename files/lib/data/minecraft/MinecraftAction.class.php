@@ -34,15 +34,9 @@ class MinecraftAction extends AbstractDatabaseObjectAction
     protected $permissionsUpdate = ['admin.minecraft.canManageConnection'];
 
     /**
-     * list of permissions required to check status
-     * @var string[]
-     */
-    protected $permissionsCheckStatus = ['admin.minecraft.canManageConnection'];
-
-    /**
      * @inheritDoc
      */
-    protected $requireACP = ['create', 'delete', 'update', 'checkStatus'];
+    protected $requireACP = ['create', 'delete', 'update'];
 
     /**
      * @inheritDoc
