@@ -4,7 +4,6 @@ namespace wcf\data\minecraft;
 
 use DateTime;
 use wcf\data\DatabaseObject;
-use wcf\system\user\authentication\password\algorithm\DoubleBcrypt;
 use wcf\system\user\authentication\password\PasswordAlgorithmManager;
 
 /**
