@@ -35,7 +35,7 @@ class Minecraft extends DatabaseObject implements ITitledObject
     /**
      * @inheritDoc
      */
-    public function getTitle()
+    public function getTitle(): string
     {
         return $this->title;
     }
