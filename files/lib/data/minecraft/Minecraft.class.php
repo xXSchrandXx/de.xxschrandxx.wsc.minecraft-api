@@ -4,6 +4,7 @@ namespace wcf\data\minecraft;
 
 use DateTime;
 use wcf\data\DatabaseObject;
+use wcf\data\ITitledObject;
 use wcf\system\user\authentication\password\PasswordAlgorithmManager;
 
 /**
@@ -13,7 +14,7 @@ use wcf\system\user\authentication\password\PasswordAlgorithmManager;
  * @license  Creative Commons Zero v1.0 Universal (http://creativecommons.org/publicdomain/zero/1.0/)
  * @package  WoltLabSuite\Core\Data\Minecraft
  */
-class Minecraft extends DatabaseObject
+class Minecraft extends DatabaseObject implements ITitledObject
 {
     /**
      * @inheritDoc
@@ -26,8 +27,7 @@ class Minecraft extends DatabaseObject
     protected static $databaseTableIndexName = 'minecraftID';
 
     /**
-     * Returns title
-     * @return ?string
+     * @inheritDoc
      */
     public function getTitle()
     {
