@@ -13,6 +13,12 @@ use wcf\system\user\authentication\password\PasswordAlgorithmManager;
  * @author   xXSchrandXx
  * @license  Creative Commons Zero v1.0 Universal (http://creativecommons.org/publicdomain/zero/1.0/)
  * @package  WoltLabSuite\Core\Data\Minecraft
+ * 
+ * @property-read int $minecraftID 
+ * @property-read string $title
+ * @property-read string $user
+ * @property-read string $password
+ * @property-read int $creationDate
  */
 class Minecraft extends DatabaseObject implements ITitledObject
 {
