@@ -16,6 +16,7 @@ use wcf\data\minecraft\MinecraftList;
 use wcf\system\event\EventHandler;
 use wcf\system\flood\FloodControl;
 use wcf\system\request\RouteHandler;
+use wcf\util\ArrayUtil;
 use wcf\util\StringUtil;
 
 /**
@@ -81,7 +82,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
             'minecraft' => $minecraft,
             'minecraftID' => $minecraft->minecraftID
         ];
-        $eventHandler->fireAction($this, 'getMinecraft');
+        $eventHandler->fireAction($this, 'getMinecraft', $parameters);
 
         // reads Parameters
         $this->readParameters($request, $parameters, $response);
@@ -136,7 +137,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
         }
 
         // Check secureConnection
-        if (!RouteHandler::getInstance()->secureConnection()) {
+        if (!ENABLE_DEVELOPER_TOOLS && !RouteHandler::getInstance()->secureConnection()) {
             $response = $this->send('SSL Certificate Required', 496);
             return;
         }
@@ -267,7 +268,7 @@ abstract class AbstractMinecraftGETAction implements RequestHandlerInterface
 
         // check if Minecraft-Entry is allowed to be used for given action
         if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($minecraft->getObjectID(), explode('\n', StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
+            if (!in_array($minecraft->getObjectID(), explode("\n", StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
                 if (ENABLE_DEBUG_MODE) {
                     $response = $this->send('Bad Request. Unknown \'Minecraft-Id\'.', 400);
                 } else {
