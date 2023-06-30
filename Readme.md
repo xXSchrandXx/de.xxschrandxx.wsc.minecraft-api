@@ -15,6 +15,8 @@ This plugin is an interface between other plugins and Minecraft servers. Minecra
 <requiredpackage minversion="{$version}">de.xxschrarndxx.wsc.minecraft-api</requiredpackage >
 ```
 # Links
+## Donate
+* [PayPal](https://www.paypal.com/donate/?hosted_button_id=RFYYT7QSAU7YJ)
 ## GitHub
 * [xXSchrandXx/de.xxschrarndxx.wsc.minecraft-api](https://github.com/xXSchrandXx/de.xxschrarndxx.wsc.minecraft-api)
 * [xXSchrandXx/WSC-Minecraft-Bridge](https://github.com/xXSchrandXx/WSC-Minecraft-Bridge)
@@ -24,7 +26,7 @@ This plugin is an interface between other plugins and Minecraft servers. Minecra
 * [xXSchrandXx/WSC-Minecraft-Sync](https://github.com/xXSchrandXx/WSC-Minecraft-Sync)
 * [xXSchrandXx/de.xxschrandxx.wsc.minecraft-authenticator](https://github.com/xXSchrandXx/de.xxschrandxx.wsc.minecraft-authenticator)
 * [xXSchrandXx/WSC-Minecraft-Authenticator](https://github.com/xXSchrandXx/WSC-Minecraft-Authenticator)
-* ([xXSchrandXx/de.xxschrandxx.wsc.minecraft-profile](https://github.com/xXSchrandXx/de.xxschrandxx.wsc.minecraft-profile))
+* [xXSchrandXx/de.xxschrandxx.wsc.minecraft-profile](https://github.com/xXSchrandXx/de.xxschrandxx.wsc.minecraft-profile)
 ## WoltLab
 * [Plugin-Store/Minecraft-API](https://www.woltlab.com/pluginstore/file/7077-minecraft-api/)
 * [Plugin-Store/Minecraft-Linker](https://www.woltlab.com/pluginstore/file/7093-minecraft-linker/)
@@ -37,18 +39,3 @@ This plugin is an interface between other plugins and Minecraft servers. Minecra
 * [Resources/WSC-Minecraft-Sync](https://www.spigotmc.org/resources/wsc-minecraft-sync.105308/)
 * [Resources/WSC-Minecraft-Authenticator](https://www.spigotmc.org/resources/wsc-minecraft-authenticator.101169/)
 * [Resources/WSC-Minecraft-JCoins](https://www.spigotmc.org/resources/wsc-minecraft-jcoins.104632/)
-## Donate
-* [PayPal](https://www.paypal.com/donate/?hosted_button_id=RFYYT7QSAU7YJ)
-## JavaDocs
-* [Docs/wscbridge](https://maven.gamestrike.de/docs/wscbridge/)
-* [Docs/wsclinker](https://maven.gamestrike.de/docs/wsclinker/)
-* [Docs/wscsync](https://maven.gamestrike.de/docs/wscsync/)
-* [Docs/wscauthenticator](https://maven.gamestrike.de/docs/wscauthenticator/)
-* [Docs/wscjcoins](https://maven.gamestrike.de/docs/wscjcoins/)
-## Maven
-```XML
-<repository>
-	<id>schrand-repo</id>
-	<url>https://maven.gamestrike.de/mvn/</url>
-</repository>
-```
