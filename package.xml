@@ -16,11 +16,11 @@
 	</authorinformation>
 
 	<requiredpackages>
-		<requiredpackage minversion="6.0.0 Alpha 1">com.woltlab.wcf</requiredpackage>
+		<requiredpackage minversion="6.0.0 RC 1">com.woltlab.wcf</requiredpackage>
 	</requiredpackages>
 
 	<excludedpackages>
-		<excludedpackage version="7.0.0 Alpha 1">com.woltlab.wcf</excludedpackage>
+		<excludedpackage version="7.0.0 RC 1">com.woltlab.wcf</excludedpackage>
 		<excludedpackage version="*">de.fabihome.minecraft.rcon.api</excludedpackage>
 		<excludedpackage version="*">de.atrox-dev.minecraft.server</excludedpackage>
 	</excludedpackages>
