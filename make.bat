@@ -1,5 +1,5 @@
 set PACKAGE_NAME=de.xxschrarndxx.wsc.minecraft-api
-set PACKAGE_TYPES=(files templates)
+set PACKAGE_TYPES=(acptemplates files)
 
 for %%i in %PACKAGE_TYPES% do (
     del .\%%i.tar
