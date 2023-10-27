@@ -7,7 +7,6 @@ use wcf\data\minecraft\MinecraftList;
 use wcf\system\exception\UserInputException;
 use wcf\system\WCF;
 use wcf\util\ArrayUtil;
-use wcf\util\StringUtil;
 
 /**
  * MinecraftConnectionMultiSelect OptionType class
