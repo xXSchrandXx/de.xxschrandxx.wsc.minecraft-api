@@ -9,12 +9,12 @@ jobs:
     name: PHP
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.0.0
+    - uses: actions/checkout@v3
     - name: Setup PHP with tools
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.2'
-        extensions: ctype, dom, exif, gd, gmp, hash, intl, json, libxml, mbstring, opcache, pcre, pdo, pdo_mysql, zlib, ssh2
-        tools: cs2pr, phpcs, php-cs-fixer
+        php-version: '8.1'
+        extensions: ctype, dom, exif, gd, gmp, hash, intl, json, libxml, mbstring, opcache, pcre, pdo, pdo_mysql, zlib
+        tools: cs2pr, phpcs
     - name: phpcs
-      run: phpcs -n -q --report=checkstyle | cs2pr
+      run: phpcs --report=checkstyle -q -n . | cs2pr
