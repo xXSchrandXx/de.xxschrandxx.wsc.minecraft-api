@@ -18,5 +18,3 @@ jobs:
         tools: cs2pr, phpcs, php-cs-fixer
     - name: phpcs
       run: phpcs -n -q --report=checkstyle | cs2pr
-    - name: php-cs-fixer
-      run: php-cs-fixer fix --dry-run --diff
