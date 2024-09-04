@@ -9,6 +9,8 @@ use wcf\data\package\Package;
 use wcf\data\package\PackageList;
 use wcf\system\endpoint\GetRequest;
 use wcf\system\endpoint\IController;
+use wcf\system\exception\PermissionDeniedException;
+use wcf\system\WCF;
 
 #[GetRequest('/xxschrandxx/minecraft/plugin')]
 final class GetPlugin implements IController
@@ -16,6 +18,10 @@ final class GetPlugin implements IController
     #[\Override]
     public function __invoke(ServerRequestInterface $request, array $variables): ResponseInterface
     {
+        if (!ENABLE_DEBUG_MODE) {
+            throw new PermissionDeniedException();
+        }
+
         $packageList = new PackageList();
         $packageList->getConditionBuilder()->add("package = 'de.xxschrarndxx.wsc.minecraft-api'");
         $packageList->readObjects();
@@ -29,7 +35,9 @@ final class GetPlugin implements IController
 
         return new JsonResponse([
             'version' => $apiPackage->packageVersion,
-            'extensions' => $extensions
+            'extensions' => $extensions,
+            'php' => PHP_VERSION_ID,
+            'wsc' => WCF_VERSION
         ]);
     }
 
