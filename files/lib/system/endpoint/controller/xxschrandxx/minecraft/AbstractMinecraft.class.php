@@ -79,7 +79,7 @@ abstract class AbstractMinecraft implements IController
 
         // validate
         $this->validate();
-        $eventHandler->fireAction($this, 'execute');
+        $eventHandler->fireAction($this, 'validate');
 
         // execute
         $this->execute();
