@@ -2,6 +2,7 @@
 
 namespace wcf\system\endpoint\controller\xxschrandxx\minecraft;
 
+use BadMethodCallException;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\TextResponse;
 use Override;
@@ -11,6 +12,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use RangeException;
 use TypeError;
 use wcf\data\minecraft\Minecraft;
+use wcf\data\minecraft\MinecraftList;
 use wcf\system\endpoint\GetRequest;
 use wcf\system\endpoint\IController;
 use wcf\system\event\EventHandler;
@@ -21,7 +23,7 @@ use wcf\system\flood\FloodControl;
 use wcf\system\request\RouteHandler;
 use wcf\util\StringUtil;
 
-#[GetRequest('/xxschrandxx/minecraft/{id:\d+}')]
+/** /xxschrandxx/minecraft **/
 abstract class AbstractMinecraft implements IController
 {
     private string $floodgate = 'de.xxschrarndxx.wsc.minecraft-api.floodgate';
@@ -38,12 +40,6 @@ abstract class AbstractMinecraft implements IController
     public $availableMinecraftIDs;
 
     /**
-     * Minecraft ID for this request
-     * @var int
-     */
-    public $minecraftID;
-
-    /**
      * Minecraft for this request
      * @var Minecraft
      */
@@ -55,15 +51,17 @@ abstract class AbstractMinecraft implements IController
      */
     public $neededModules = [];
 
-    /**
-     * @var ?ResponseInterface
-     */
-    public $response = null;
+    /** @var array */
+    public $variables;
+
+    /** @var ?ResponseInterface */
+    public $response;
 
     #[Override]
     public function __invoke(ServerRequestInterface $request, array $variables): ResponseInterface
     {
         $this->request = $request;
+        $this->variables = $variables;
 
         // load EventHandler
         $eventHandler = EventHandler::getInstance();
@@ -75,20 +73,16 @@ abstract class AbstractMinecraft implements IController
             return $this->response;
         }
 
-        // validateVariables parameters
-        $this->validateVariables($variables);
-        $eventHandler->fireAction($this, 'execute');
-
         // gets Minecraft
         $this->getMinecraft();
         $eventHandler->fireAction($this, 'getMinecraft');
 
-        // check weather request is authenticated
-        $this->checkPermissions($request);
-        $eventHandler->fireAction($this, 'checkPermissions');
+        // validate
+        $this->validate();
+        $eventHandler->fireAction($this, 'execute');
 
         // execute
-        $this->response = $this->execute();
+        $this->execute();
         $eventHandler->fireAction($this, 'execute');
         if ($this->response instanceof ResponseInterface) {
             return $this->response;
@@ -148,63 +142,37 @@ abstract class AbstractMinecraft implements IController
      * Gets minecraft
      * This method should not be modified
      * @param $request
-     * @param $variables
      * @throws UserInputException
      * @return void
      */
     public function getMinecraft(): void
     {
-        // check if Minecraft-Entry is allowed to be used for given action
-        if (isset($this->availableMinecraftIDs)) {
-            if (!in_array($this->minecraftID, explode("\n", StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
-                throw new UserInputException('id', 'unknown');
-            }
-        }
-
-        // search for Minecraft-Entry with given user
-        $this->minecraft = new Minecraft($this->minecraftID);
-
-        // validate Minecraft-Entry exists
-        if (!$this->minecraft->getObjectID()) {
-            throw new UserInputException('id', 'unknown');
-        }
-    }
-
-    /**
-     * Checks weather request is permitted
-     * This method should not be modified
-     * @throws SystemException
-     * @throws PermissionDeniedException
-     * @return void
-     */
-    public function checkPermissions(ServerRequestInterface $request): void
-    {
         // validate request has Headers
-        if (empty($request->getHeaders())) {
+        if (empty($this->request->getHeaders())) {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. Could not read headers.', 400);
+                throw new PermissionDeniedException('Bad Request. Could not read headers.');
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         }
 
         // validate request has Authorization Header
-        if (!$request->hasHeader('authorization')) {
+        if (!$this->request->hasHeader('authorization')) {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. Missing \'Authorization\' in headers.', 400);
+                throw new PermissionDeniedException('Bad Request. Missing \'Authorization\' in headers.');
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         }
 
         // read header
-        [$method, $encoded] = \explode(' ', $request->getHeaderLine('authorization'), 2);
+        [$method, $encoded] = \explode(' ', $this->request->getHeaderLine('authorization'), 2);
         // validate Authentication Method
         if ($method !== 'Basic') {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. \'Authorization\' not supported.', 400);
+                throw new PermissionDeniedException('Bad Request. \'Authorization\' not supported.');
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         }
         // Try to decode Authentication
@@ -212,15 +180,15 @@ abstract class AbstractMinecraft implements IController
             $decoded = Base64::decode($encoded);
         } catch (RangeException $e) {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. ' . $e->getMessage(), 400, '', $e);
+                throw new PermissionDeniedException('Bad Request. ' . $e->getMessage());
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         } catch (TypeError $e) {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. ' . $e->getMessage(), 400);
+                throw new PermissionDeniedException('Bad Request. ' . $e->getMessage());
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         }
 
@@ -229,39 +197,66 @@ abstract class AbstractMinecraft implements IController
         // validate that user and password are given
         if (!$decodedArr) {
             if (ENABLE_DEBUG_MODE) {
-                throw new SystemException('Bad Request. \'Authorization\' string wrong formatted.', 400);
+                throw new PermissionDeniedException('Bad Request. \'Authorization\' string wrong formatted.');
             } else {
-                throw new SystemException('Bad Request.', 400);
+                throw new PermissionDeniedException();
             }
         }
 
-        // check user and password
-        if (!hash_equals($this->minecraft->getUser(), $decodedArr[0]) || !$this->minecraft->check($decodedArr[1])) {
+        // search for Minecraft-Entry with given user
+        $minecraftList = new MinecraftList();
+        $minecraftList->getConditionBuilder()->add('user = ?', [$decodedArr[0]]);
+        $minecraftList->readObjects();
+        try {
+            /** @var Minecraft */
+            $this->minecraft = $minecraftList->getSingleObject();
+        } catch (BadMethodCallException $e) {
+            // handled by !isset
+        }
+
+        // validate Minecraft-Entry exists
+        if (!isset($this->minecraft)) {
             if (ENABLE_DEBUG_MODE) {
-                throw new PermissionDeniedException('Unauthorized. Unknown user or password.', 401);
+                throw new PermissionDeniedException('Unauthorized. Unknown user or password.');
             } else {
-                throw new PermissionDeniedException('Unauthorized.', 401);
+                throw new PermissionDeniedException();
+            }
+        }
+
+        // check if Minecraft-Entry is allowed to be used for given action
+        if (isset($this->availableMinecraftIDs)) {
+            if (!in_array($this->minecraft->getObjectID(), explode("\n", StringUtil::unifyNewlines($this->availableMinecraftIDs)))) {
+                if (ENABLE_DEBUG_MODE) {
+                    throw new PermissionDeniedException('Unauthorized. Invalid minecraft ID');
+                } else {
+                    throw new PermissionDeniedException();
+                }
+            }
+        }
+
+        // check password
+        if (!$this->minecraft->check($decodedArr[1])) {
+            if (ENABLE_DEBUG_MODE) {
+                throw new PermissionDeniedException('Unauthorized. Unknown user or password.');
+            } else {
+                throw new PermissionDeniedException();
             }
         }
     }
 
     /**
-     * Reads the given parameters.
-     * Has no parameters to read with HTTP-GET method.
-     * @param array &$parameters modifiable parameters
+     * Validates this action.
      * @throws UserInputException
      * @return void
      */
-    public function validateVariables(array $variables): void
+    public function validate(): void
     {
-        if (!array_key_exists('id', $variables))
-            throw new UserInputException('id');
-        $this->minecraftID = $variables['id'];
+        // Has no parameters to read
     }
 
     /**
      * Executes this action.
-     * @return ?ResponseInterface
+     * @return void
      */
-    abstract public function execute(): ?ResponseInterface;
+    abstract public function execute(): void;
 }
