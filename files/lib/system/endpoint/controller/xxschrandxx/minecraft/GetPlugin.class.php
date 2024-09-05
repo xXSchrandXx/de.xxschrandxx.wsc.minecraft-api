@@ -10,10 +10,9 @@ use wcf\data\package\PackageList;
 use wcf\system\endpoint\GetRequest;
 use wcf\system\endpoint\IController;
 use wcf\system\exception\PermissionDeniedException;
-use wcf\system\WCF;
 
 #[GetRequest('/xxschrandxx/minecraft/plugin')]
-final class GetPlugin implements IController
+class GetPlugin implements IController
 {
     #[\Override]
     public function __invoke(ServerRequestInterface $request, array $variables): ResponseInterface
